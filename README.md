@@ -114,6 +114,11 @@ TuRutaMed_Backend/
 ├── requirements.txt                   # Manifiesto de dependencias de Python del proyecto
 ├── README.md                          # Documentación técnica corporativa de la API
 │
+├── tests/                             # Suite de pruebas unitarias y de integración (pytest)
+│   ├── __init__.py                    # Inicializador del paquete de tests
+│   ├── conftest.py                    # Fixtures globales (TestClient de FastAPI)
+│   └── test_usuarios.py               # Casos de prueba para endpoints de salud y autenticación
+│
 └── app/                               # Paquete principal del aplicativo backend
     ├── __init__.py                    # Inicializador de paquete Python
     ├── database.py                    # Motores de base de datos (Engine SQLAlchemy y MongoClient Atlas)
@@ -133,6 +138,7 @@ TuRutaMed_Backend/
     ├── routers/                       # Controladores de endpoints y capa HTTP (APIRouters)
     │   ├── __init__.py                # Inicializador de módulo routers
     │   ├── alertas_router.py          # Endpoints de reportes de tráfico en tiempo real (Modo Waze)
+    │   ├── ia_router.py               # Asistente de movilidad con Google Gemini AI (Google GenAI)
     │   ├── rutas_router.py            # Endpoints de consulta y registro geoespacial de rutas
     │   └── usuarios_router.py         # Endpoints de registro y login de usuarios con generación de JWT
     │
@@ -242,6 +248,12 @@ A continuación se presenta la matriz completa de endpoints expuestos por la API
 | :---: | :--- | :--- | :--- | :---: | :---: |
 | `GET` | `/alertas/` | Lista todas las incidencias viales y alertas ciudadanas activas. | Ninguno | **Público** | `200 OK` |
 | `POST` | `/alertas/` | Emite un nuevo reporte vial comunitario geolocalizado en la red. | `AlertaCreate` (tipo, descripción, coordenadas, ruta) | **Público** | `201 Created` |
+
+### 6.5 Módulo: Inteligencia Artificial - Asistente TuRutaMed (`/ia`)
+
+| Método | Endpoint | Descripción | Esquema Body (Entrada) | Nivel de Acceso | Código HTTP Éxito |
+| :---: | :--- | :--- | :--- | :---: | :---: |
+| `POST` | `/ia/asistente-ruta` | Consultas de movilidad y recomendaciones multimodales con Gemini 2.5 Flash. | `ConsultaMovilidadRequest` (`pregunta`: str) | **Público** | `200 OK` |
 
 ---
 

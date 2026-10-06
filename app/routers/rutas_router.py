@@ -3,6 +3,8 @@ from typing import List
 from app.schemas.ruta_schema import RutaCreate, RutaRespuesta
 from app.models.ruta_mongo import insertar_ruta_db, obtener_todas_las_rutas_db
 
+
+
 router = APIRouter(prefix="/rutas", tags=["Gestión de Rutas y Transporte (MongoDB)"])
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)

@@ -2,10 +2,14 @@ from app.database import mongo_db
 from datetime import datetime
 from bson import ObjectId
 
-coleccion_alertas = mongo_db["alertas"]
+coleccion_alertas = mongo_db["alertas"] if mongo_db is not None else None
 
 # Creamos un índice geoespacial para las alertas (Modo Waze por cercanía)
-coleccion_alertas.create_index([("coordenadas", "2dsphere")])
+if coleccion_alertas is not None:
+    try:
+        coleccion_alertas.create_index([("coordenadas", "2dsphere")])
+    except Exception as e:
+        print(f"⚠️ No se pudo inicializar el índice 2dsphere en alertas: {e}")
 
 def insertar_alerta_db(alerta_data: dict):
     """Inserta una nueva incidencia o reporte ciudadano en MongoDB Atlas"""

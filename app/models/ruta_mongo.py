@@ -1,11 +1,15 @@
 from app.database import mongo_db
 from bson import ObjectId
 
-coleccion_rutas = mongo_db["rutas"]
+coleccion_rutas = mongo_db["rutas"] if mongo_db is not None else None
 
-# CREAMOS EL ÍNDICE GEOESPACIAL 
+# CREAMOS EL ÍNDICE GEOESPACIAL
 # Esto le permite a MongoDB hacer búsquedas de mapas ultrarrápidas
-coleccion_rutas.create_index([("paraderos.coordenadas", "2dsphere")])
+if coleccion_rutas is not None:
+    try:
+        coleccion_rutas.create_index([("paraderos.coordenadas", "2dsphere")])
+    except Exception as e:
+        print(f"⚠️ No se pudo inicializar el índice 2dsphere en rutas: {e}")
 
 def insertar_ruta_db(ruta_data: dict):
     """Inserta una nueva ruta de transporte con geolocalización en MongoDB Atlas"""
