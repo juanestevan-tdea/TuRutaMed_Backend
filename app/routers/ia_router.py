@@ -29,6 +29,7 @@ def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
     """
     Endpoint modular para consultar opciones de transporte multimodal
     y recomendaciones en Medellín usando Gemini.
+    Implementa un patrón de fallback para no romper la experiencia del usuario.
     """
     try:
         respuesta = consultar_asistente_rutas(request.pregunta)
@@ -38,7 +39,12 @@ def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
             "respuesta": respuesta,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud con IA: {str(e)}")
+        print(f"Error real de la IA: {e}")
+        return {
+            "estado": "fallback",
+            "asistente": "TuRutaMed AI",
+            "respuesta": "En este momento mis servidores de IA están en mantenimiento, pero te sugiero tomar la Línea A del Metro.",
+        }
 
 
 @router.post("/optimizar-ruta")
