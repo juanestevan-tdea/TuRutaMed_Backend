@@ -38,6 +38,11 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "turutamed_db")
 mongo_client = None
 mongo_db = None
 
+def get_mongo_db():
+    """Retorna la instancia de la base de datos MongoDB (o None si no está conectada)."""
+    return mongo_db
+
+
 if not MONGO_URI:
     print("❌ Error: No se encontró MONGO_URI en el archivo .env")
 else:

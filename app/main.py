@@ -7,6 +7,8 @@ from app.routers.civica_router import router as civica_router
 from app.routers.viajes_router import router as viajes_router
 from app.routers.reportes_router import router as reportes_router
 from app.core.exceptions import registrar_manejadores_excepciones
+from app.database_seeder import seed_rutas_if_empty
+from app.database import get_mongo_db
 
 # Inicializar tablas en MySQL
 Base.metadata.create_all(bind=engine)
@@ -29,6 +31,14 @@ app.include_router(ia_router)
 app.include_router(civica_router)
 app.include_router(viajes_router)
 app.include_router(reportes_router)
+
+# Seeder automático al iniciar si la colección está vacía (solo si Mongo está disponible)
+try:
+    _mongo_db = get_mongo_db()
+    if _mongo_db is not None:
+        seed_rutas_if_empty(_mongo_db)
+except Exception as _e:
+    print(f"[Seeder] No se pudo ejecutar el seeder automatico: {_e}")
 
 @app.get("/", tags=["Inicio"])
 def leer_raiz():

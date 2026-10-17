@@ -1,37 +1,73 @@
 import os
 from fastapi import APIRouter, HTTPException
-from google import genai
 from pydantic import BaseModel
+from app.services.gemini_service import (
+    consultar_asistente_rutas,
+    optimizar_itinerario_multimodal,
+    analizar_congestion_vial,
+)
 
 router = APIRouter(prefix="/ia", tags=["Inteligencia Artificial - Asistente TuRutaMed"])
 
-# Inicializar el cliente utilizando la variable de entorno que guardaste en el .env
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 class ConsultaMovilidadRequest(BaseModel):
     pregunta: str
 
+
+class OptimizarRutaRequest(BaseModel):
+    origen: str
+    destino: str
+    alertas: list = []
+
+
+class AnalizarCongestionRequest(BaseModel):
+    alertas: list = []
+
+
 @router.post("/asistente-ruta")
 def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
     """
-    Endpoint modular para consultar opciones de transporte multimodal 
+    Endpoint modular para consultar opciones de transporte multimodal
     y recomendaciones en Medellín usando Gemini.
     """
     try:
-        prompt_completo = (
-            "Eres un asistente experto en movilidad urbana, transporte público "
-            "(Metro, metrocables, buses integrados) y geolocalización en el Valle de Aburrá, Medellín. "
-            f"Responde de forma clara y útil a la siguiente consulta del ciudadano: {request.pregunta}"
-        )
-        
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt_completo,
+        respuesta = consultar_asistente_rutas(request.pregunta)
+        return {
+            "estado": "exitoso",
+            "asistente": "TuRutaMed AI",
+            "respuesta": respuesta,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud con IA: {str(e)}")
+
+
+@router.post("/optimizar-ruta")
+def optimizar_ruta(request: OptimizarRutaRequest):
+    """Optimiza un itinerario multimodal entre origen y destino usando Gemini AI."""
+    try:
+        respuesta = optimizar_itinerario_multimodal(
+            origen=request.origen,
+            destino=request.destino,
+            alertas=request.alertas,
         )
         return {
             "estado": "exitoso",
             "asistente": "TuRutaMed AI",
-            "respuesta": response.text
+            "itinerario": respuesta,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud con IA: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {str(e)}")
+
+
+@router.post("/analizar-congestion")
+def analizar_congestion(request: AnalizarCongestionRequest):
+    """Analiza alertas viales y genera un resumen predictivo de congestión."""
+    try:
+        respuesta = analizar_congestion_vial(request.alertas)
+        return {
+            "estado": "exitoso",
+            "asistente": "TuRutaMed AI",
+            "analisis": respuesta,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {str(e)}")
