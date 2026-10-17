@@ -6,9 +6,12 @@ ENV/
 
 # Python cache y bytecode
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyo
+*.pyc
 
 # Pruebas y cobertura
 .pytest_cache/

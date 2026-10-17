@@ -3,6 +3,9 @@ from app.database import engine, Base
 from app.models.usuario import Usuario
 from app.routers import usuarios_router, rutas_router, alertas_router
 from app.routers.ia_router import router as ia_router
+from app.routers.civica_router import router as civica_router
+from app.routers.viajes_router import router as viajes_router
+from app.routers.reportes_router import router as reportes_router
 from app.core.exceptions import registrar_manejadores_excepciones
 
 # Inicializar tablas en MySQL
@@ -23,6 +26,9 @@ app.include_router(usuarios_router.router)
 app.include_router(rutas_router.router)
 app.include_router(alertas_router.router)
 app.include_router(ia_router)
+app.include_router(civica_router)
+app.include_router(viajes_router)
+app.include_router(reportes_router)
 
 @app.get("/", tags=["Inicio"])
 def leer_raiz():
