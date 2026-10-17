@@ -54,6 +54,18 @@ app.include_router(civica_router)
 app.include_router(viajes_router)
 app.include_router(reportes_router)
 
+# Alias versionado /api/v1 para consumo del frontend (mantiene rutas raíz para compatibilidad con tests)
+for _r in (
+    usuarios_router.router,
+    rutas_router.router,
+    alertas_router.router,
+    ia_router,
+    civica_router,
+    viajes_router,
+    reportes_router,
+):
+    app.include_router(_r, prefix="/api/v1")
+
 # Seeder automático al iniciar si la colección está vacía (solo si Mongo está disponible)
 try:
     _mongo_db = get_mongo_db()
