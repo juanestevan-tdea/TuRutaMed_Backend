@@ -11,7 +11,11 @@ interface Ruta {
   tipo_transporte?: string;
 }
 
-export default function RouteSearchPanel() {
+interface Props {
+  setRutaSeleccionada: (ruta: Ruta | null) => void;
+}
+
+export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
   const [origen, setOrigen] = useState('');
   const [destino, setDestino] = useState('');
   const [resultados, setResultados] = useState<Ruta[]>([]);
@@ -45,9 +49,26 @@ export default function RouteSearchPanel() {
     }
   };
 
+  const limpiar = () => {
+    setOrigen('');
+    setDestino('');
+    setResultados([]);
+    setBuscado(false);
+    setRutaSeleccionada(null);
+  };
+
   return (
     <div className="absolute top-4 left-4 z-[1000] w-96 bg-white p-4 rounded-lg shadow-xl max-h-[80vh] overflow-hidden flex flex-col">
-      <h2 className="text-lg font-bold text-gray-800 mb-3">Planificar Viaje</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold text-gray-800">Planificar Viaje</h2>
+        <button
+          onClick={limpiar}
+          className="text-gray-400 hover:text-gray-700 text-sm"
+          aria-label="Limpiar búsqueda"
+        >
+          ✕
+        </button>
+      </div>
       <form onSubmit={buscar} className="space-y-3">
         <input
           type="text"
@@ -85,7 +106,7 @@ export default function RouteSearchPanel() {
         {resultados.map((ruta, idx) => (
           <div
             key={ruta._id || ruta.id || idx}
-            onClick={() => console.log('Ruta seleccionada:', ruta)}
+            onClick={() => setRutaSeleccionada(ruta)}
             className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
           >
             <p className="font-semibold text-gray-800">
