@@ -1,12 +1,13 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime
 
 # Esto es lo que PEDIMOS al usuario cuando se registra
 class UsuarioRegistro(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     nombre: str
-    email: EmailStr  # Valida que sea un correo real con '@'
-    contrasena: str
-    rol: str = "Usuario_Regular"  # Por defecto todos son regulares
+    email: EmailStr
+    contrasena: str = Field(alias="password")
+    rol: str = "Usuario_Regular"
 
 # Esto es lo que DEVOLVEMOS al usuario (jamás devolvemos la contraseña)
 class UsuarioRespuesta(BaseModel):
@@ -22,8 +23,9 @@ class UsuarioRespuesta(BaseModel):
         
 # Lo que pedimos para el Login
 class UsuarioLogin(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     email: EmailStr
-    contrasena: str
+    contrasena: str = Field(alias="password")
 
 # Lo que devolvemos si el login es exitoso
 class Token(BaseModel):
