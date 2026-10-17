@@ -15,9 +15,11 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 interface Paradero {
-  nombre_paradero: string;
-  coordenadas: [number, number];
-  orden: number;
+  nombre_paradero?: string;
+  coordenadas?: [number, number];
+  latitud?: number;
+  longitud?: number;
+  orden?: number;
 }
 
 interface Ruta {
@@ -49,6 +51,7 @@ export default function Home() {
       .then((res) => {
         if (cancelled) return;
         const data = Array.isArray(res.data) ? res.data : [];
+        console.log("Estructura de la primera ruta:", data[0]);
         setRutas(data);
       })
       .catch(() => {
@@ -76,19 +79,32 @@ export default function Home() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {rutas.map((ruta, idx) => {
-          const paraderos = (ruta.paraderos || []).slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
-          const coords: [number, number][] = paraderos.map((p) => [p.coordenadas[1], p.coordenadas[0]]);
+          const paraderos = (ruta.paraderos || []).slice().sort((a: any, b: any) => (a?.orden ?? 0) - (b?.orden ?? 0));
+          const toLatLng = (p: any): [number, number] | null => {
+            if (p?.coordenadas && Array.isArray(p.coordenadas) && p.coordenadas.length >= 2) {
+              return [p.coordenadas[1], p.coordenadas[0]];
+            }
+            if (typeof p?.latitud === 'number' && typeof p?.longitud === 'number') {
+              return [p.latitud, p.longitud];
+            }
+            return null;
+          };
+          const coords: [number, number][] = paraderos.map(toLatLng).filter((c): c is [number, number] => c !== null);
           const color = colorPorTipo(ruta.tipo_transporte);
           return (
             <span key={ruta._id || ruta.id || idx}>
               {coords.length > 1 && (
                 <Polyline positions={coords} pathOptions={{ color, weight: 4, opacity: 0.8 }} />
               )}
-              {paraderos.map((p, i) => (
-                <Marker key={`${ruta._id || idx}-${i}`} position={[p.coordenadas[1], p.coordenadas[0]]}>
-                  <Popup>{p.nombre_paradero}</Popup>
-                </Marker>
-              ))}
+              {paraderos.map((p: any, i: number) => {
+                const pos = toLatLng(p);
+                if (!pos) return null;
+                return (
+                  <Marker key={`${ruta._id || idx}-${i}`} position={pos}>
+                    <Popup>{p?.nombre_paradero || 'Paradero'}</Popup>
+                  </Marker>
+                );
+              })}
             </span>
           );
         })}
