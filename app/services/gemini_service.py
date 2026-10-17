@@ -46,27 +46,35 @@ def _get_client() -> genai.Client:
 def consultar_asistente_rutas(prompt_usuario: str, modelo: str = "gemini-2.5-flash") -> str:
     """
     Consulta al asistente de IA sobre rutas y movilidad en el Valle de Aburrá.
-    Lanza HTTP 503 si el servicio externo no está disponible.
+    Implementa fallback: si el modelo principal falla, intenta con un modelo alternativo.
+    Lanza HTTP 503 si todos los modelos fallan.
     """
-    try:
-        client = _get_client()
-        response = client.models.generate_content(
-            model=modelo,
-            contents=prompt_usuario,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                temperature=0.7,
-                max_output_tokens=1024,
-            ),
-        )
-        return response.text
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="El servicio de IA no se encuentra disponible temporalmente.",
-        ) from e
+    modelos_a_intentar = [modelo, "gemini-1.5-flash"]
+    ultimo_error = None
+    for modelo_actual in modelos_a_intentar:
+        try:
+            client = _get_client()
+            response = client.models.generate_content(
+                model=modelo_actual,
+                contents=prompt_usuario,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                ),
+            )
+            print(f"[IA] Respuesta generada con el modelo: {modelo_actual}")
+            return response.text
+        except Exception as e:
+            ultimo_error = e
+            print(f"[IA] Fallo con el modelo {modelo_actual}: {e}")
+            continue
+
+    print("[IA] Todos los modelos fallaron.")
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="El servicio de IA no se encuentra disponible temporalmente.",
+    ) from ultimo_error
 
 
 def optimizar_itinerario_multimodal(
