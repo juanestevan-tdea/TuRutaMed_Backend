@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.civica_schema import (
     SaldoCivicaRespuesta,
     RecargaCivicaRequest,
     RecargaCivicaRespuesta,
 )
 from app.domain.modelos_poo import TarjetaCivica, RecargaCivica
+from app.core.seguridad import get_current_user
 
 router = APIRouter(prefix="/civica", tags=["Tarjeta Cívica (RF-07, RF-08)"])
 
@@ -30,8 +31,8 @@ def consultar_saldo(tarjeta_id: str):
 
 
 @router.post("/recargar", response_model=RecargaCivicaRespuesta, status_code=status.HTTP_200_OK)
-def recargar_tarjeta(payload: RecargaCivicaRequest):
-    """Procesa una recarga de saldo a una tarjeta Cívica (RF-08)."""
+def recargar_tarjeta(payload: RecargaCivicaRequest, current_user: dict = Depends(get_current_user)):
+    """Procesa una recarga de saldo a una tarjeta Cívica (RF-08). Requiere JWT."""
     tarjeta = _obtener_o_crear_tarjeta(payload.tarjeta_id)
     saldo_anterior = tarjeta.consultar_saldo()
 

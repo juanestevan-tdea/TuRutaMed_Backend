@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from app.schemas.viaje_schema import (
     DuracionViajeRequest,
     DuracionViajeRespuesta,
@@ -6,6 +6,7 @@ from app.schemas.viaje_schema import (
     ViajeMultimodalRespuesta,
 )
 from app.domain.modelos_poo import Viaje, ViajeMultimodal
+from app.core.seguridad import get_current_user
 
 router = APIRouter(prefix="/viajes", tags=["Viajes y Multimodalidad (RF-03, RF-05)"])
 
@@ -33,3 +34,13 @@ def planificar_viaje_multimodal(payload: ViajeMultimodalRequest):
         secuencia_rutas=viaje_m.secuencia_rutas,
         itinerario=viaje_m.mostrar_secuencia(),
     )
+
+
+@router.get("/historial", status_code=status.HTTP_200_OK)
+def consultar_historial(current_user: dict = Depends(get_current_user)):
+    """Consulta el historial de viajes del usuario autenticado (RF-10). Requiere JWT."""
+    return {
+        "usuario": current_user.get("sub"),
+        "historial": [],
+        "mensaje": "Historial consultado exitosamente",
+    }

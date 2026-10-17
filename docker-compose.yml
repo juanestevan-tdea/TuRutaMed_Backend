@@ -12,6 +12,15 @@ services:
     environment:
       MONGO_INITDB_DATABASE: turutamed
 
+  redis:
+    image: redis:alpine
+    container_name: turutamed_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   backend:
     build: .
     container_name: turutamed_backend
@@ -21,11 +30,14 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
       - MONGODB_DB=turutamed
+      - REDIS_URL=redis://redis:6379
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - mongodb
+      - redis
     volumes:
       - .:/app
 
 volumes:
   mongo_data:
+  redis_data:
