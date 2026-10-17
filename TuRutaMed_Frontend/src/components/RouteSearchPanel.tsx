@@ -9,6 +9,7 @@ interface Ruta {
   destino?: string;
   tiempo_estimado_minutos?: number;
   tipo_transporte?: string;
+  paraderos?: { nombre_paradero?: string }[];
 }
 
 interface Props {
@@ -34,11 +35,18 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
       const o = origen.trim().toLowerCase();
       const d = destino.trim().toLowerCase();
       const filtradas = data.filter((r) => {
-        const ro = (r.origen || '').toLowerCase();
-        const rd = (r.destino || '').toLowerCase();
-        const matchOrigen = o === '' || ro.includes(o);
-        const matchDestino = d === '' || rd.includes(d);
-        return matchOrigen && matchDestino;
+        const haystack = [
+          r.origen,
+          r.destino,
+          ...(r.paraderos || []).map((p: any) => p?.nombre_paradero),
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (o === '' && d === '') return true;
+        if (o !== '' && d !== '') return haystack.includes(o) || haystack.includes(d);
+        if (o !== '') return haystack.includes(o);
+        return haystack.includes(d);
       });
       setResultados(filtradas);
     } catch (err) {
@@ -98,7 +106,7 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
       <div className="mt-4 max-h-64 overflow-y-auto space-y-2">
         {loading && <p className="text-sm text-gray-500">Buscando...</p>}
         {!loading && buscado && resultados.length === 0 && (
-          <p className="text-sm text-gray-400">Sin resultados.</p>
+          <p className="text-sm text-gray-400">No se encontraron rutas para esta búsqueda. Intenta con otros términos.</p>
         )}
         {!buscado && !loading && (
           <p className="text-sm text-gray-400">Sin resultados aún.</p>
