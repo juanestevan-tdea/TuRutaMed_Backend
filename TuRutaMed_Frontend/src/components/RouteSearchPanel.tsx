@@ -5,28 +5,41 @@ interface Ruta {
   _id?: string;
   id?: string;
   nombre_ruta?: string;
+  origen?: string;
+  destino?: string;
   tiempo_estimado_minutos?: number;
-  costo?: number;
   tipo_transporte?: string;
 }
 
 export default function RouteSearchPanel() {
   const [origen, setOrigen] = useState('');
   const [destino, setDestino] = useState('');
-  const [rutas, setRutas] = useState<Ruta[]>([]);
+  const [resultados, setResultados] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [buscado, setBuscado] = useState(false);
 
   const buscar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setBuscado(true);
     try {
-      const res = await api.get('/rutas', { params: { limit: 20, skip: 0 } });
-      const data = Array.isArray(res.data) ? res.data : [];
-      setRutas(data);
+      const res = await api.get('/rutas', { params: { limit: 100, skip: 0 } });
+      const data: Ruta[] = Array.isArray(res.data) ? res.data : [];
+      const o = origen.trim().toLowerCase();
+      const d = destino.trim().toLowerCase();
+      const filtradas = data.filter((r) => {
+        const ro = (r.origen || '').toLowerCase();
+        const rd = (r.destino || '').toLowerCase();
+        const matchOrigen = o === '' || ro.includes(o);
+        const matchDestino = d === '' || rd.includes(d);
+        return matchOrigen && matchDestino;
+      });
+      setResultados(filtradas);
     } catch (err) {
       setError('No se pudieron obtener las rutas.');
+      setResultados([]);
     } finally {
       setLoading(false);
     }
@@ -61,15 +74,19 @@ export default function RouteSearchPanel() {
 
       {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
 
-      <div className="mt-4 overflow-y-auto flex-1 space-y-2">
+      <div className="mt-4 max-h-64 overflow-y-auto space-y-2">
         {loading && <p className="text-sm text-gray-500">Buscando...</p>}
-        {!loading && rutas.length === 0 && (
+        {!loading && buscado && resultados.length === 0 && (
+          <p className="text-sm text-gray-400">Sin resultados.</p>
+        )}
+        {!buscado && !loading && (
           <p className="text-sm text-gray-400">Sin resultados aún.</p>
         )}
-        {rutas.map((ruta, idx) => (
+        {resultados.map((ruta, idx) => (
           <div
             key={ruta._id || ruta.id || idx}
-            className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition"
+            onClick={() => console.log('Ruta seleccionada:', ruta)}
+            className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
           >
             <p className="font-semibold text-gray-800">
               {ruta.nombre_ruta || 'Ruta sin nombre'}
@@ -77,11 +94,10 @@ export default function RouteSearchPanel() {
             <p className="text-sm text-gray-600">
               ⏱ {ruta.tiempo_estimado_minutos ?? 'N/A'} min
             </p>
-            <p className="text-sm text-gray-600">
-              💲 {ruta.costo ?? 'N/A'}
-            </p>
             {ruta.tipo_transporte && (
-              <p className="text-xs text-gray-400 mt-1">{ruta.tipo_transporte}</p>
+              <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                {ruta.tipo_transporte}
+              </span>
             )}
           </div>
         ))}
