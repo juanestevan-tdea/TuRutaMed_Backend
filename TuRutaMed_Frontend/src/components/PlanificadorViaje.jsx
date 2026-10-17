@@ -8,10 +8,15 @@ export default function PlanificadorViaje() {
   const [duracion, setDuracion] = useState(null);
   const [multimodal, setMultimodal] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const calcularDuracion = async () => {
-    if (!origen || !destino) return;
+    if (!origen || !destino) {
+      setError("Completa origen y destino.");
+      return;
+    }
     setLoading(true);
+    setError("");
     try {
       const res = await api.post("/viajes/calcular-duracion", {
         origen,
@@ -20,22 +25,26 @@ export default function PlanificadorViaje() {
       });
       setDuracion(res.data);
     } catch (err) {
-      console.error(err);
+      setError(err?.response?.data?.detail || "No se pudo calcular la duración.");
     } finally {
       setLoading(false);
     }
   };
 
   const planificarMultimodal = async () => {
-    if (!origen || !destino) return;
+    if (!origen || !destino) {
+      setError("Completa origen y destino.");
+      return;
+    }
     setLoading(true);
+    setError("");
     try {
       const res = await api.post("/viajes/multimodal", {
         secuencia_rutas: [`${origen} → ${destino} (Metro)`, "Metrocable", "Bus Alimentador"],
       });
       setMultimodal(res.data);
     } catch (err) {
-      console.error(err);
+      setError(err?.response?.data?.detail || "No se pudo planificar el viaje.");
     } finally {
       setLoading(false);
     }
@@ -77,6 +86,10 @@ export default function PlanificadorViaje() {
             <Train className="w-4 h-4" /> Plan Multimodal
           </button>
         </div>
+
+        {error && (
+          <p className="text-sm text-red-600 font-medium">{error}</p>
+        )}
 
         {duracion && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">

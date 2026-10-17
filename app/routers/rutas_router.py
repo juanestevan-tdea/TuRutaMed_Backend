@@ -1,49 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status, Depends, Query
 from typing import List
-from app.schemas.ruta_schema import RutaCreate, RutaRespuesta
-from app.models.ruta_mongo import insertar_ruta_db, obtener_todas_las_rutas_db
-
-
-
-router = APIRouter(prefix="/rutas", tags=["Gestión de Rutas y Transporte (MongoDB)"])
-
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-def crear_ruta(ruta: RutaCreate):
-    """Crea una nueva ruta de transporte público con sus paraderos geolocalizados"""
-    ruta_dict = ruta.dict(by_alias=True)
-    nuevo_id = insertar_ruta_db(ruta_dict)
-    return {
-        "mensaje": "¡Ruta creada exitosamente en MongoDB Atlas!",
-        "id_ruta": nuevo_id
-    }
-
-@router.get("/", response_model=List[dict])
-def listar_rutas():
-    """Obtiene el listado completo de rutas de transporte registradas"""
-    rutas = obtener_todas_las_rutas_db()
-    return rutas
-
-# Asegúrate de importar la función buscar_paraderos_cercanos_db desde app.models.ruta_mongo
-from app.models.ruta_mongo import (
-    insertar_ruta_db, 
-    obtener_todas_las_rutas_db, 
-    buscar_paraderos_cercanos_db
-)
-
-# (Mantén tus rutas anteriores y añade esta nueva)
-
-@router.get("/cercanos", response_model=List[dict])
-def consultar_rutas_cercanas(longitud: float, latitud: float):
-    """
-    Busca las rutas de transporte público cuyos paraderos estén cerca 
-    de la ubicación enviada (ej. Longitud: -75.5451, Latitud: 6.2752).
-    """
-    rutas = buscar_paraderos_cercanos_db(longitud, latitud)
-    return rutas
-
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from typing import List
-from app.schemas.ruta_schema import RutaCreate, RutaRespuesta
+from app.schemas.ruta_schema import RutaCreate
 from app.models.ruta_mongo import (
     insertar_ruta_db,
     obtener_todas_las_rutas_db,
@@ -57,15 +14,12 @@ router = APIRouter(prefix="/rutas", tags=["Gestión de Rutas y Transporte (Mongo
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 def crear_ruta(ruta: RutaCreate, admin: dict = Depends(verificar_rol_admin)):
-    """
-    Crea una nueva ruta de transporte público.
-    ¡Protegido! Solo accesible para usuarios con rol de administrador (JWT).
-    """
+    """Crea una nueva ruta de transporte público (solo administradores)."""
     ruta_dict = ruta.dict(by_alias=True)
     nuevo_id = insertar_ruta_db(ruta_dict)
     return {
-        "mensaje": "¡Ruta creada exitosamente por el administrador en MongoDB Atlas!",
-        "id_ruta": nuevo_id
+        "mensaje": "¡Ruta creada exitosamente en MongoDB Atlas!",
+        "id_ruta": nuevo_id,
     }
 
 
@@ -74,7 +28,7 @@ async def listar_rutas(
     limit: int = Query(default=10, ge=1, le=100, description="Máximo de elementos por página"),
     skip: int = Query(default=0, ge=0, description="Desplazamiento (offset)"),
 ):
-    """Obtiene el listado completo de rutas de transporte registradas (Público). Con caché Redis (5 min) y paginación."""
+    """Obtiene el listado de rutas de transporte (público, con caché y paginación)."""
     cache_key = make_cache_key("rutas:all", limit=limit, skip=skip)
     cached = await cache_get(cache_key)
     if cached is not None:
@@ -92,7 +46,7 @@ async def consultar_rutas_cercanas(
     limit: int = Query(default=10, ge=1, le=100, description="Máximo de elementos por página"),
     skip: int = Query(default=0, ge=0, description="Desplazamiento (offset)"),
 ):
-    """Busca rutas cercanas a una ubicación dada (Público). Con caché Redis (5 min) y paginación."""
+    """Busca rutas cercanas a una ubicación dada (público, con caché y paginación)."""
     cache_key = make_cache_key("rutas:cercanos", longitud=longitud, latitud=latitud, limit=limit, skip=skip)
     cached = await cache_get(cache_key)
     if cached is not None:

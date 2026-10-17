@@ -1,5 +1,4 @@
 import os
-import jwt
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from dotenv import load_dotenv
@@ -28,7 +27,7 @@ def crear_token_acceso(data: dict):
     to_encode.update({"exp": expire})
 
     # Sellamos el pasaporte con nuestra FIRMA SECRETA
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jose_jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 from fastapi import Depends, HTTPException, status
