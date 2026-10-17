@@ -91,8 +91,10 @@ export default function Civica() {
         {/* Panel de acciones */}
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Número de tarjeta</label>
+            <label htmlFor="numero-tarjeta" className="block text-sm font-medium text-gray-700 mb-1">Número de tarjeta</label>
             <input
+              id="numero-tarjeta"
+              name="numero-tarjeta"
               type="text"
               value={tarjetaId}
               onChange={(e) => setTarjetaId(e.target.value)}
@@ -109,8 +111,10 @@ export default function Civica() {
           </button>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Monto a recargar</label>
+            <label htmlFor="monto-recarga" className="block text-sm font-medium text-gray-700 mb-1">Monto a recargar</label>
             <input
+              id="monto-recarga"
+              name="monto-recarga"
               type="number"
               value={monto}
               onChange={(e) => setMonto(e.target.value)}

@@ -75,7 +75,6 @@ export default function Home() {
       .then((res) => {
         if (cancelled) return;
         const data = Array.isArray(res.data) ? res.data : [];
-        console.log("Estructura de la primera ruta:", data[0]);
         setRutas(data);
       })
       .catch(() => {

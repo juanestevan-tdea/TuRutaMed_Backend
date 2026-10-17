@@ -15,25 +15,25 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col">
       <nav className="bg-white shadow-md h-16 flex items-center px-6">
         <div className="flex items-center justify-between w-full">
-          <NavLink to="/home" className="text-xl font-bold text-blue-600">
+          <NavLink to="/home" className="text-xl font-bold text-blue-600 whitespace-nowrap">
             TuRutaMed
           </NavLink>
-          <div className="flex items-center gap-6">
-            <NavLink to="/home" className={linkClass}>
+          <div className="flex items-center gap-6 whitespace-nowrap">
+            <NavLink to="/home" className={linkClass + " whitespace-nowrap"}>
               Mapa
             </NavLink>
-            <NavLink to="/home" className={linkClass}>
+            <NavLink to="/home" className={linkClass + " whitespace-nowrap"}>
               Rutas
             </NavLink>
-            <NavLink to="/civica" className={linkClass}>
+            <NavLink to="/civica" className={linkClass + " whitespace-nowrap"}>
               Mi Tarjeta
             </NavLink>
-            <NavLink to="/asistente" className={linkClass}>
+            <NavLink to="/asistente" className={linkClass + " whitespace-nowrap"}>
               Asistente IA
             </NavLink>
             <button
               onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition whitespace-nowrap"
             >
               Cerrar Sesión
             </button>
