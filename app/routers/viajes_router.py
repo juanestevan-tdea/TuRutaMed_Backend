@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Query
 from app.schemas.viaje_schema import (
     DuracionViajeRequest,
     DuracionViajeRespuesta,
@@ -37,10 +37,19 @@ def planificar_viaje_multimodal(payload: ViajeMultimodalRequest):
 
 
 @router.get("/historial", status_code=status.HTTP_200_OK)
-def consultar_historial(current_user: dict = Depends(get_current_user)):
-    """Consulta el historial de viajes del usuario autenticado (RF-10). Requiere JWT."""
+def consultar_historial(
+    limit: int = Query(default=10, ge=1, le=100, description="Máximo de elementos por página"),
+    skip: int = Query(default=0, ge=0, description="Desplazamiento (offset)"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Consulta el historial de viajes del usuario autenticado (RF-10). Requiere JWT. Con paginación."""
+    historial = []
+    paginated = historial[skip:skip + limit]
     return {
         "usuario": current_user.get("sub"),
-        "historial": [],
+        "historial": paginated,
+        "total": len(historial),
+        "limit": limit,
+        "skip": skip,
         "mensaje": "Historial consultado exitosamente",
     }

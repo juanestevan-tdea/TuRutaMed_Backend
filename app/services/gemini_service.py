@@ -12,6 +12,7 @@ Dependencia: google-genai
 
 import os
 from typing import Optional
+from fastapi import HTTPException, status
 from google import genai
 from google.genai import types
 
@@ -45,25 +46,27 @@ def _get_client() -> genai.Client:
 def consultar_asistente_rutas(prompt_usuario: str, modelo: str = "gemini-2.5-flash") -> str:
     """
     Consulta al asistente de IA sobre rutas y movilidad en el Valle de Aburrá.
-
-    Args:
-        prompt_usuario: Consulta del ciudadano.
-        modelo: Modelo de Gemini a utilizar (por defecto gemini-2.5-flash).
-
-    Returns:
-        Respuesta generada por el modelo.
+    Lanza HTTP 503 si el servicio externo no está disponible.
     """
-    client = _get_client()
-    response = client.models.generate_content(
-        model=modelo,
-        contents=prompt_usuario,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.7,
-            max_output_tokens=1024,
-        ),
-    )
-    return response.text
+    try:
+        client = _get_client()
+        response = client.models.generate_content(
+            model=modelo,
+            contents=prompt_usuario,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.7,
+                max_output_tokens=1024,
+            ),
+        )
+        return response.text
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El servicio de IA no se encuentra disponible temporalmente.",
+        ) from e
 
 
 def optimizar_itinerario_multimodal(
@@ -71,43 +74,47 @@ def optimizar_itinerario_multimodal(
 ) -> str:
     """
     Solicita a Gemini la optimización de un itinerario multimodal entre dos puntos.
-
-    Args:
-        origen: Punto de partida.
-        destino: Punto de arribo.
-        alertas: Lista opcional de alertas viales activas.
-
-    Returns:
-        Recomendación de itinerario generada por IA.
+    Lanza HTTP 503 si el servicio externo no está disponible.
     """
-    alertas_texto = ""
-    if alertas:
-        alertas_texto = "\nAlertas viales activas: " + "; ".join(str(a) for a in alertas)
+    try:
+        alertas_texto = ""
+        if alertas:
+            alertas_texto = "\nAlertas viales activas: " + "; ".join(str(a) for a in alertas)
 
-    prompt = (
-        f"Planifica el mejor itinerario de transporte público multimodal "
-        f"desde '{origen}' hasta '{destino}' en el Valle de Aburrá. "
-        f"Incluye combinaciones de Metro, Metrocable, Tranvía, Metroplús y "
-        f"buses integrados. Indica tiempos estimados y puntos de transferencia. "
-        f"Considera accesibilidad (PMR) si es relevante.{alertas_texto}"
-    )
-    return consultar_asistente_rutas(prompt)
+        prompt = (
+            f"Planifica el mejor itinerario de transporte público multimodal "
+            f"desde '{origen}' hasta '{destino}' en el Valle de Aburrá. "
+            f"Incluye combinaciones de Metro, Metrocable, Tranvía, Metroplús y "
+            f"buses integrados. Indica tiempos estimados y puntos de transferencia. "
+            f"Considera accesibilidad (PMR) si es relevante.{alertas_texto}"
+        )
+        return consultar_asistente_rutas(prompt)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El servicio de IA no se encuentra disponible temporalmente.",
+        ) from e
 
 
 def analizar_congestion_vial(alertas: list) -> str:
     """
     Analiza un conjunto de alertas viales y genera un resumen predictivo.
-
-    Args:
-        alertas: Lista de diccionarios con alertas viales.
-
-    Returns:
-        Resumen analítico de la congestión vial.
+    Lanza HTTP 503 si el servicio externo no está disponible.
     """
-    prompt = (
-        "Analiza las siguientes alertas viales reportadas por ciudadanos en "
-        "el Valle de Aburrá y genera un resumen de la situación de tráfico, "
-        "identificando zonas críticas y recomendaciones para los operadores:\n"
-        + "\n".join(str(a) for a in alertas)
-    )
-    return consultar_asistente_rutas(prompt)
+    try:
+        prompt = (
+            "Analiza las siguientes alertas viales reportadas por ciudadanos en "
+            "el Valle de Aburrá y genera un resumen de la situación de tráfico, "
+            "identificando zonas críticas y recomendaciones para los operadores:\n"
+            + "\n".join(str(a) for a in alertas)
+        )
+        return consultar_asistente_rutas(prompt)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El servicio de IA no se encuentra disponible temporalmente.",
+        ) from e

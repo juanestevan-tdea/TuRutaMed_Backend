@@ -20,6 +20,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
+from fastapi import HTTPException, status
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 CACHE_TTL = 300  # 5 minutos en segundos
@@ -28,23 +29,31 @@ _redis_client = None
 
 
 async def get_redis_client():
-    """Obtiene el cliente Redis asíncrono (singleton)."""
+    """Obtiene el cliente Redis asíncrono (singleton). Lanza 503 si no está disponible."""
     global _redis_client
     if not REDIS_AVAILABLE:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El servicio de caché no se encuentra disponible temporalmente.",
+        )
     if _redis_client is None:
         try:
             _redis_client = redis.from_url(REDIS_URL, decode_responses=True)
             await _redis_client.ping()
-        except Exception:
+        except Exception as e:
             _redis_client = None
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="El servicio de caché no se encuentra disponible temporalmente.",
+            ) from e
     return _redis_client
 
 
 async def cache_get(key: str) -> Optional[Any]:
     """Obtiene un valor del caché. Retorna None si no existe o Redis no está disponible."""
-    client = await get_redis_client()
-    if client is None:
+    try:
+        client = await get_redis_client()
+    except HTTPException:
         return None
     try:
         value = await client.get(key)
@@ -57,8 +66,9 @@ async def cache_get(key: str) -> Optional[Any]:
 
 async def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
     """Guarda un valor en el caché con TTL. Retorna True si se guardó exitosamente."""
-    client = await get_redis_client()
-    if client is None:
+    try:
+        client = await get_redis_client()
+    except HTTPException:
         return False
     try:
         await client.set(key, json.dumps(value, default=str), ex=ttl)
@@ -69,8 +79,9 @@ async def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
 
 async def cache_delete(key: str) -> bool:
     """Elimina una clave del caché."""
-    client = await get_redis_client()
-    if client is None:
+    try:
+        client = await get_redis_client()
+    except HTTPException:
         return False
     try:
         await client.delete(key)
