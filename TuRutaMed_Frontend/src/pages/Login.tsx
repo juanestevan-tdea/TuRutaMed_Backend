@@ -13,14 +13,17 @@ export default function Login() {
     setError('');
     try {
       const res = await api.post('/usuarios/login', { email, password });
-      const token = res.data?.access_token;
-      if (token) {
-        localStorage.setItem('token', token);
+      const accessToken = res.data?.access_token;
+      const refreshToken = res.data?.refresh_token;
+      if (accessToken) {
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('token', accessToken);
+        if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
         navigate('/home');
       } else {
         setError('No se recibió un token válido.');
       }
-    } catch (err) {
+    } catch {
       setError('Credenciales inválidas o error del servidor.');
     }
   };

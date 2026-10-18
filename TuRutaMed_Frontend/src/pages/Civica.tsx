@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { AxiosError } from 'axios';
 
 export default function Civica() {
   const [tarjetaId, setTarjetaId] = useState<string>('123456');
@@ -21,8 +22,9 @@ export default function Civica() {
       const res = await api.get(`/civica/saldo/${encodeURIComponent(tarjetaId.trim())}`);
       setSaldo(res.data?.saldo ?? 0);
       setMensaje('Saldo actualizado.');
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'No se pudo conectar con el servidor.');
+    } catch (err) {
+      const e = err as AxiosError<{ detail?: string }>;
+      setError(e.response?.data?.detail || 'No se pudo conectar con el servidor.');
       setSaldo(null);
     } finally {
       setLoading(false);
@@ -46,12 +48,13 @@ export default function Civica() {
       setSaldo(res.data?.saldo_nuevo ?? saldo);
       setMensaje(res.data?.mensaje || 'Recarga exitosa.');
       setMonto('');
-    } catch (err: any) {
-      const status = err?.response?.status;
+    } catch (err) {
+      const e = err as AxiosError<{ detail?: string }>;
+      const status = e.response?.status;
       if (status === 401) {
         setError('Debes iniciar sesión para recargar.');
       } else {
-        setError(err?.response?.data?.detail || 'No se pudo conectar con el servidor.');
+        setError(e.response?.data?.detail || 'No se pudo conectar con el servidor.');
       }
     } finally {
       setLoading(false);

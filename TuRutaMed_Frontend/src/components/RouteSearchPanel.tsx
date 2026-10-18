@@ -38,7 +38,7 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
         const haystack = [
           r.origen,
           r.destino,
-          ...(r.paraderos || []).map((p: any) => p?.nombre_paradero),
+          ...(r.paraderos || []).map((p: { nombre_paradero?: string }) => p?.nombre_paradero),
         ]
           .filter(Boolean)
           .join(' ')
@@ -49,7 +49,7 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
         return haystack.includes(d);
       });
       setResultados(filtradas);
-    } catch (err) {
+    } catch {
       setError('No se pudieron obtener las rutas.');
       setResultados([]);
     } finally {
