@@ -1,43 +1,105 @@
-version: "3.9"
+networks:
+  turutamed-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
 
 services:
-  mongodb:
-    image: mongo:7.0
-    container_name: turutamed_mongodb
+  mysql:
+    image: mysql:8.0
+    container_name: turutamed_mysql
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-turutamed}
+      MYSQL_USER: ${MYSQL_USER:-turutamed}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-turutamedpass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - turutamed-net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mongo:
+    image: mongo:7.0
+    container_name: turutamed_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-turutamed_db}
     volumes:
       - mongo_data:/data/db
-    environment:
-      MONGO_INITDB_DATABASE: turutamed
+    networks:
+      - turutamed-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: turutamed_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
+    networks:
+      - turutamed-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: turutamed_backend
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017
-      - MONGODB_DB=turutamed
-      - REDIS_URL=redis://redis:6379
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    depends_on:
-      - mongodb
-      - redis
+      MYSQL_URL: mysql+pymysql://${MYSQL_USER:-turutamed}:${MYSQL_PASSWORD:-turutamedpass}@mysql:3306/${MYSQL_DATABASE:-turutamed}
+      MONGO_URI: mongodb://mongo:27017/?serverSelectionTimeoutMS=5000
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-turutamed_db}
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-change_me}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     volumes:
       - .:/app
+    networks:
+      - turutamed-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-volumes:
-  mongo_data:
-  redis_data:
+  frontend:
+    build:
+      context: ./TuRutaMed_Frontend
+      dockerfile: Dockerfile
+    container_name: turutamed_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./TuRutaMed_Frontend:/app
+      - /app/node_modules
+    networks:
+      - turutamed-net
+    depends_on:
+      - backend
