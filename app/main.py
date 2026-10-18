@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.health import router as health_router
 from app.core.config import get_settings
 from app.core.exceptions import registrar_manejadores_excepciones
+from app.core.logging import configure_logging
+from app.core.middleware import RequestIDMiddleware
 from app.database import Base, engine, get_mongo_db
 from app.database_seeder import seed_rutas_if_empty
 from app.routers import alertas_router, rutas_router, usuarios_router
@@ -12,6 +14,8 @@ from app.routers.ia_router import router as ia_router
 from app.routers.reportes_router import router as reportes_router
 from app.routers.viajes_router import router as viajes_router
 from app.services.cache_service import get_redis_client
+
+configure_logging()
 
 settings = get_settings()
 
@@ -61,6 +65,8 @@ registrar_manejadores_excepciones(app)
 
 # Health checks (sin prefijo de versión para orquestadores)
 app.include_router(health_router)
+
+app.add_middleware(RequestIDMiddleware)
 
 # MIDDLEWARE CORS
 app.add_middleware(

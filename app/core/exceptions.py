@@ -80,7 +80,7 @@ def registrar_manejadores_excepciones(app: Any) -> None:
 
     @app.exception_handler(DomainException)
     async def domain_exception_handler(request: Request, exc: DomainException):
-        logger.warning("DomainException [%s]: %s", exc.code, exc.message)
+        logger.error("DomainException [%s]: %s", exc.code, exc.message)
         return JSONResponse(
             status_code=exc.status_code,
             content={
