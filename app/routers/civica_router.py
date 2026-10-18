@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
+from app.core.exceptions import DomainException
 from app.core.seguridad import get_current_user
 from app.domain.modelos_poo import RecargaCivica, TarjetaCivica
 from app.schemas.civica_schema import (
@@ -39,9 +40,10 @@ def recargar_tarjeta(payload: RecargaCivicaRequest, current_user: dict = Depends
 
     recarga = RecargaCivica(monto=payload.monto, metodo_de_pago=payload.metodo_de_pago)
     if not recarga.procesar_pago():
-        raise HTTPException(
+        raise DomainException(
+            message="El pago no pudo ser procesado por la pasarela.",
+            code="PAYMENT_FAILED",
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="El pago no pudo ser procesado por la pasarela.",
         )
 
     tarjeta.saldo += payload.monto

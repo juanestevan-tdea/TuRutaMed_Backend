@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.seguridad import (
     crear_token_acceso,
     obtener_hash_contrasena,
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 def registrar_usuario(usuario_in: UsuarioRegistro, db: Session = Depends(get_mysql_db)):  # noqa: B008
     usuario_existente = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
     if usuario_existente:
-        raise HTTPException(status_code=400, detail="Este correo electrónico ya está registrado.")
+        raise ConflictError(message="Este correo electrónico ya está registrado.")
 
     clave_segura = obtener_hash_contrasena(usuario_in.contrasena)
     nuevo_usuario = Usuario(
@@ -47,16 +48,12 @@ def iniciar_sesion(usuario_in: UsuarioLogin, db: Session = Depends(get_mysql_db)
     usuario_bd = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
     if not usuario_bd:
         # Si no existe, error 401
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Correo o contraseña incorrectos"
-        )
+        raise UnauthorizedError(message="Correo o contraseña incorrectos")
 
     # B. Comparamos la contraseña plana con el hash raro de la BD
     if not verificar_contrasena(usuario_in.contrasena, str(usuario_bd.contrasena_encriptada)):
         # Si no cuadra, error 401
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Correo o contraseña incorrectos"
-        )
+        raise UnauthorizedError(message="Correo o contraseña incorrectos")
 
     # C. Si todo está perfecto, creamos el Pasaporte (JWT)
     # Metemos su email y su rol dentro del token para saber quién es cuando vuelva

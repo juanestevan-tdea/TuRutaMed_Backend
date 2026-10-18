@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.core.exceptions import DomainException
 from app.services.gemini_service import (
     analizar_congestion_vial,
     consultar_asistente_rutas,
@@ -62,7 +63,11 @@ def optimizar_ruta(request: OptimizarRutaRequest):
             "itinerario": respuesta,
         }
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {e!s}") from e
+        raise DomainException(
+            message=f"Error al optimizar la ruta: {e!s}",
+            code="AI_SERVICE_ERROR",
+            status_code=500,
+        ) from e
 
 
 @router.post("/analizar-congestion")
@@ -76,4 +81,8 @@ def analizar_congestion(request: AnalizarCongestionRequest):
             "analisis": respuesta,
         }
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {e!s}") from e
+        raise DomainException(
+            message=f"Error al analizar congestión: {e!s}",
+            code="AI_SERVICE_ERROR",
+            status_code=500,
+        ) from e

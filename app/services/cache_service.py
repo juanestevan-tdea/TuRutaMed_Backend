@@ -20,9 +20,8 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-from fastapi import HTTPException, status
-
 from app.core.config import get_settings
+from app.core.exceptions import DomainException
 
 settings = get_settings()
 REDIS_URL = settings.redis_url
@@ -35,9 +34,10 @@ async def get_redis_client():
     """Obtiene el cliente Redis asíncrono (singleton). Lanza 503 si no está disponible."""
     global _redis_client
     if not REDIS_AVAILABLE:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="El servicio de caché no se encuentra disponible temporalmente.",
+        raise DomainException(
+            message="El servicio de caché no se encuentra disponible temporalmente.",
+            code="CACHE_UNAVAILABLE",
+            status_code=503,
         )
     if _redis_client is None:
         try:
@@ -45,9 +45,10 @@ async def get_redis_client():
             await _redis_client.ping()
         except Exception as e:
             _redis_client = None
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="El servicio de caché no se encuentra disponible temporalmente.",
+            raise DomainException(
+                message="El servicio de caché no se encuentra disponible temporalmente.",
+                code="CACHE_UNAVAILABLE",
+                status_code=503,
             ) from e
     return _redis_client
 
@@ -56,7 +57,7 @@ async def cache_get(key: str) -> Any | None:
     """Obtiene un valor del caché. Retorna None si no existe o Redis no está disponible."""
     try:
         client = await get_redis_client()
-    except HTTPException:
+    except DomainException:  # noqa: BLE001
         return None
     try:
         value = await client.get(key)
@@ -71,7 +72,7 @@ async def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
     """Guarda un valor en el caché con TTL. Retorna True si se guardó exitosamente."""
     try:
         client = await get_redis_client()
-    except HTTPException:
+    except DomainException:  # noqa: BLE001
         return False
     try:
         await client.set(key, json.dumps(value, default=str), ex=ttl)
@@ -84,7 +85,7 @@ async def cache_delete(key: str) -> bool:
     """Elimina una clave del caché."""
     try:
         client = await get_redis_client()
-    except HTTPException:
+    except DomainException:  # noqa: BLE001
         return False
     try:
         await client.delete(key)

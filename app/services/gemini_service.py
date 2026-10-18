@@ -10,11 +10,12 @@ Dependencia: google-genai
 ==============================================================================
 """
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from google import genai
 from google.genai import types
 
 from app.core.config import get_settings
+from app.core.exceptions import DomainException
 
 settings = get_settings()
 
@@ -101,9 +102,10 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) ->
             continue
 
     print("[IA] Todos los modelos fallaron.")
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="El servicio de IA no se encuentra disponible temporalmente.",
+    raise DomainException(
+        message="El servicio de IA no se encuentra disponible temporalmente.",
+        code="AI_SERVICE_UNAVAILABLE",
+        status_code=503,
     ) from ultimo_error
 
 
@@ -128,9 +130,10 @@ def optimizar_itinerario_multimodal(origen: str, destino: str, alertas: list | N
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="El servicio de IA no se encuentra disponible temporalmente.",
+        raise DomainException(
+            message="El servicio de IA no se encuentra disponible temporalmente.",
+            code="AI_SERVICE_UNAVAILABLE",
+            status_code=503,
         ) from e
 
 
@@ -150,7 +153,8 @@ def analizar_congestion_vial(alertas: list) -> str:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="El servicio de IA no se encuentra disponible temporalmente.",
+        raise DomainException(
+            message="El servicio de IA no se encuentra disponible temporalmente.",
+            code="AI_SERVICE_UNAVAILABLE",
+            status_code=503,
         ) from e
