@@ -17,10 +17,20 @@ def _raise_conflict():
 def test_not_found_handler(client: TestClient):
     response = client.get("/_test/not-found")
     assert response.status_code == 404
-    assert response.json() == {"error": {"code": "NOT_FOUND", "message": "recurso no encontrado"}}
+    body = response.json()
+    assert body["type"] == "https://turutamed.com/errors/NOT_FOUND"
+    assert body["title"] == "NOT_FOUND"
+    assert body["status"] == 404
+    assert body["detail"] == "recurso no encontrado"
+    assert body["instance"] == "/_test/not-found"
 
 
 def test_conflict_handler(client: TestClient):
     response = client.get("/_test/conflict")
     assert response.status_code == 409
-    assert response.json() == {"error": {"code": "CONFLICT", "message": "estado en conflicto"}}
+    body = response.json()
+    assert body["type"] == "https://turutamed.com/errors/CONFLICT"
+    assert body["title"] == "CONFLICT"
+    assert body["status"] == 409
+    assert body["detail"] == "estado en conflicto"
+    assert body["instance"] == "/_test/conflict"

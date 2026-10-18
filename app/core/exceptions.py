@@ -83,7 +83,13 @@ def registrar_manejadores_excepciones(app: Any) -> None:
         logger.warning("DomainException [%s]: %s", exc.code, exc.message)
         return JSONResponse(
             status_code=exc.status_code,
-            content={"error": {"code": exc.code, "message": exc.message}},
+            content={
+                "type": f"https://turutamed.com/errors/{exc.code}",
+                "title": exc.code,
+                "status": exc.status_code,
+                "detail": exc.message,
+                "instance": str(request.url.path),
+            },
         )
 
     @app.exception_handler(RequestValidationError)
