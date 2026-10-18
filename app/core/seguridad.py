@@ -1,44 +1,45 @@
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError
+from jose import jwt as jose_jwt
 from passlib.context import CryptContext
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.core.config import get_settings
 
-# Variables de entorno para JWT
-SECRET_KEY = os.getenv("SECRET_KEY", "secreto_temporal")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+settings = get_settings()
+
+SECRET_KEY = settings.jwt_secret
+ALGORITHM = settings.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_expire_minutes
 
 # Configuración de bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def obtener_hash_contrasena(contrasena: str):
     return pwd_context.hash(contrasena)
+
 
 def verificar_contrasena(contrasena_plana: str, contrasena_hasheada: str):
     return pwd_context.verify(contrasena_plana, contrasena_hasheada)
 
+
 def crear_token_acceso(data: dict):
     """Fábrica de Tokens: Crea el pasaporte digital (JWT)"""
     to_encode = data.copy()
-    # Le ponemos una fecha de vencimiento (ej. 1 hora)
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
 
-    # Sellamos el pasaporte con nuestra FIRMA SECRETA
     encoded_jwt = jose_jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt as jose_jwt, JWTError
 
-# Usamos HTTPBearer para que Swagger nos permita pegar el token directamente
 security = HTTPBearer()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):  # noqa: B008
     """Dependencia que valida el JWT y retorna el payload del usuario autenticado."""
     token = credentials.credentials
     credentials_exception = HTTPException(
@@ -55,7 +56,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise credentials_exception
 
 
-def verificar_rol_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def verificar_rol_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):  # noqa: B008
     """Verifica que el token sea válido y pertenezca a un administrador"""
     token = credentials.credentials
     credentials_exception = HTTPException(
@@ -70,7 +71,7 @@ def verificar_rol_admin(credentials: HTTPAuthorizationCredentials = Depends(secu
         if rol not in ("admin", "Administrador_Sistema", "operador"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acceso denegado: Se requieren privilegios suficientes"
+                detail="Acceso denegado: Se requieren privilegios suficientes",
             )
         return payload
     except JWTError:

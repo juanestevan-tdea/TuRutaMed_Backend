@@ -1,27 +1,24 @@
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+import certifi
 from pymongo import MongoClient
-from dotenv import load_dotenv
-import certifi # <--- AGREGA ESTA LÍNEA
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Cargar las variables ocultas del archivo .env
-load_dotenv()
+from app.core.config import get_settings
+
+settings = get_settings()
 
 # ==========================================
 # CONFIGURACIÓN MySQL
 # ==========================================
-MYSQL_URL = os.getenv("MYSQL_URL")
-if not MYSQL_URL:
-    print("❌ Error: No se encontró MYSQL_URL en el archivo .env")
-else:
-    try:
-        engine = create_engine(MYSQL_URL)
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        Base = declarative_base()
-        print("✅ Conexión preparada para MySQL local")
-    except Exception as e:
-        print(f"❌ Error al configurar MySQL: {e}")
+MYSQL_URL = settings.mysql_url
+try:
+    engine = create_engine(MYSQL_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+    print("✅ Conexión preparada para MySQL local")
+except Exception as e:  # noqa: BLE001
+    print(f"❌ Error al configurar MySQL: {e}")
+
 
 def get_mysql_db():
     db = SessionLocal()
@@ -30,29 +27,29 @@ def get_mysql_db():
     finally:
         db.close()
 
+
 # ==========================================
-# CONFIGURACIÓN MongoDB Atlas
+# CONFIGURACIÓN MongoDB
 # ==========================================
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "turutamed_db")
+MONGO_URI = settings.mongo_url
+MONGO_DB_NAME = settings.mongo_db_name
 
 mongo_client = None
 mongo_db = None
+
 
 def get_mongo_db():
     """Retorna la instancia de la base de datos MongoDB (o None si no está conectada)."""
     return mongo_db
 
 
-if not MONGO_URI:
-    print("❌ Error: No se encontró MONGO_URI en el archivo .env")
-else:
-    try:
-        # Modifica esta línea agregando el parámetro tlsCAFile
-        mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
-        mongo_db = mongo_client[MONGO_DB_NAME]
-        # Esto fuerza a que Mongo verifique la conexión (un 'ping')
-        mongo_client.admin.command('ping')
-        print(f"✅ Conexión exitosa a MongoDB Atlas (Base de datos: {MONGO_DB_NAME})")
-    except Exception as e:
-        print(f"❌ Error conectando a MongoDB Atlas: Verifica tu usuario/contraseña o tu conexión a internet.\nDetalle: {e}")
+try:
+    mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    mongo_db = mongo_client[MONGO_DB_NAME]
+    mongo_client.admin.command("ping")
+    print(f"✅ Conexión exitosa a MongoDB (Base de datos: {MONGO_DB_NAME})")
+except Exception as e:  # noqa: BLE001
+    print(
+        "❌ Error conectando a MongoDB: Verifica tu usuario/contraseña o tu "
+        f"conexión a internet.\nDetalle: {e}"
+    )

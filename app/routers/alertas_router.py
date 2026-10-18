@@ -1,7 +1,8 @@
+
 from fastapi import APIRouter, status
-from typing import List
-from app.schemas.alerta_schema import AlertaCreate, AlertaRespuesta
+
 from app.models.alerta_mongo import insertar_alerta_db, obtener_alertas_db
+from app.schemas.alerta_schema import AlertaCreate
 
 router = APIRouter(prefix="/alertas", tags=["Modo Waze - Reportes en Tiempo Real (MongoDB)"])
 
@@ -15,7 +16,7 @@ def reportar_incidencia(alerta: AlertaCreate):
         "id_alerta": nuevo_id
     }
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=list[dict])
 def listar_alertas():
     """Consulta el listado de todas las alertas y reportes activos en la ciudad"""
     return obtener_alertas_db()

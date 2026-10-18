@@ -1,6 +1,6 @@
+from datetime import UTC, datetime
+
 from app.database import mongo_db
-from datetime import datetime
-from bson import ObjectId
 
 coleccion_alertas = mongo_db["alertas"] if mongo_db is not None else None
 
@@ -8,12 +8,12 @@ coleccion_alertas = mongo_db["alertas"] if mongo_db is not None else None
 if coleccion_alertas is not None:
     try:
         coleccion_alertas.create_index([("coordenadas", "2dsphere")])
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"⚠️ No se pudo inicializar el índice 2dsphere en alertas: {e}")
 
 def insertar_alerta_db(alerta_data: dict):
     """Inserta una nueva incidencia o reporte ciudadano en MongoDB Atlas"""
-    alerta_data["fecha_reporte"] = datetime.utcnow().isoformat()
+    alerta_data["fecha_reporte"] = datetime.now(UTC).isoformat()
     resultado = coleccion_alertas.insert_one(alerta_data)
     return str(resultado.inserted_id)
 

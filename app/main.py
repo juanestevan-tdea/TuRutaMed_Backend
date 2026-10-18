@@ -1,26 +1,28 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
-from app.models.usuario import Usuario
-from app.routers import usuarios_router, rutas_router, alertas_router
-from app.routers.ia_router import router as ia_router
-from app.routers.civica_router import router as civica_router
-from app.routers.viajes_router import router as viajes_router
-from app.routers.reportes_router import router as reportes_router
+
+from app.core.config import get_settings
 from app.core.exceptions import registrar_manejadores_excepciones
+from app.database import Base, engine, get_mongo_db
 from app.database_seeder import seed_rutas_if_empty
-from app.database import get_mongo_db
+from app.routers import alertas_router, rutas_router, usuarios_router
+from app.routers.civica_router import router as civica_router
+from app.routers.ia_router import router as ia_router
+from app.routers.reportes_router import router as reportes_router
+from app.routers.viajes_router import router as viajes_router
 from app.services.cache_service import get_redis_client
-import asyncio
+
+settings = get_settings()
 
 # Inicializar tablas en MySQL
 Base.metadata.create_all(bind=engine)
 
 # Instancia de la aplicación FastAPI
 app = FastAPI(
-    title="TuRutaMed API - Sistema de Transporte Inteligente",
-    description="API REST para planificación multimodal, consulta de saldo Cívica y alertas de movilidad en el Valle de Aburrá.",
-    version="2.5.0",
+    title=settings.app_name,
+    description="API REST para planificacion multimodal, consulta de saldo Civica y alertas de movilidad en el Valle de Aburra.",
+    version=settings.app_version,
     openapi_tags=[
         {"name": "Usuarios", "description": "Registro, autenticación y gestión de usuarios (RBAC)."},
         {"name": "Gestión de Rutas y Transporte (MongoDB)", "description": "Consulta de rutas, paraderos y geolocalización."},
@@ -39,7 +41,7 @@ registrar_manejadores_excepciones(app)
 # MIDDLEWARE CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:5173"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,7 +73,7 @@ try:
     _mongo_db = get_mongo_db()
     if _mongo_db is not None:
         seed_rutas_if_empty(_mongo_db)
-except Exception as _e:
+except Exception as _e:  # noqa: BLE001
     print(f"[Seeder] No se pudo ejecutar el seeder automatico: {_e}")
 
 
@@ -85,7 +87,7 @@ async def health_check():
         if db is not None:
             db.client.admin.command("ping")
             mongo_status = "connected"
-    except Exception:
+    except Exception:  # noqa: BLE001
         mongo_status = "error"
 
     try:
@@ -93,12 +95,12 @@ async def health_check():
         if client is not None:
             await client.ping()
             redis_status = "connected"
-    except Exception:
+    except Exception:  # noqa: BLE001
         redis_status = "error"
 
     return {
         "status": "healthy",
-        "version": "2.5.0",
+        "version": settings.app_version,
         "dependencies": {
             "mongodb": mongo_status,
             "redis": redis_status,
@@ -120,16 +122,3 @@ def probar_roles():
         "seguridad": "JWT Auth activo con RBAC"
     }
 
-@app.get("/", tags=["Inicio"])
-def leer_raiz():
-    return {
-        "mensaje": "¡Bienvenido a la API de TuRutaMed!",
-        "estado": "Servidor funcionando correctamente al 100%"
-    }
-
-@app.get("/estado-roles", tags=["Pruebas"])
-def probar_roles():
-    return {
-        "roles_soportados": ["Usuario_Regular", "Pasajero_Multimodal", "Administrador_Sistema"],
-        "seguridad": "JWT Auth activo con RBAC"
-    }

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 
 # Esto es lo que PEDIMOS al usuario cuando se registra
 class UsuarioRegistro(BaseModel):

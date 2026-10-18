@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.sql import func
+
 from app.database import Base
+
 
 class Usuario(Base):
     __tablename__ = "usuarios"  # Así se llamará la tabla en MySQL

@@ -1,4 +1,3 @@
-import pytest
 
 def test_health_check_o_raiz(client):
     """Verifica que el punto de entrada principal responda correctamente."""

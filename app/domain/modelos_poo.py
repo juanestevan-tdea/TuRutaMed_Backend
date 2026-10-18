@@ -11,7 +11,6 @@ Representación de la lógica de negocio para los Requisitos Funcionales RF-01 a
 ==============================================================================
 """
 
-from typing import List
 
 
 # ============================================================================
@@ -97,8 +96,8 @@ class AlternativaTransporte:
 class ViajeMultimodal:
     """Compone y gestiona secuencias de rutas combinadas (Metro, Bus, Metrocable)."""
 
-    def __init__(self, secuencia_rutas: List[str]):
-        self.secuencia_rutas: List[str] = secuencia_rutas
+    def __init__(self, secuencia_rutas: list[str]):
+        self.secuencia_rutas: list[str] = secuencia_rutas
 
     def mostrar_secuencia(self) -> str:
         """Genera el itinerario paso a paso de las conexiones sugeridas."""
@@ -156,10 +155,10 @@ class RecargaCivica:
 class HistorialViajes:
     """Consolida el registro histórico y las métricas estadísticas del pasajero."""
 
-    def __init__(self, id_usuario: str, viajes_realizados: List[str]):
+    def __init__(self, id_usuario: str, viajes_realizados: list[str]):
         self.id_usuario: str = id_usuario
-        self.viajes_realizados: List[str] = viajes_realizados
+        self.viajes_realizados: list[str] = viajes_realizados
 
-    def obtener_estadisticas(self) -> List[str]:
+    def obtener_estadisticas(self) -> list[str]:
         """Recupera la lista histórica de desplazamientos realizados por el usuario."""
         return self.viajes_realizados

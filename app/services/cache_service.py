@@ -8,11 +8,10 @@ Estrategia asincrónica para cachear consultas frecuentes de rutas durante
 ==============================================================================
 """
 
-import os
-import json
 import hashlib
-from typing import Any, Optional
+import json
 from functools import wraps
+from typing import Any
 
 try:
     import redis.asyncio as redis
@@ -22,7 +21,10 @@ except ImportError:
 
 from fastapi import HTTPException, status
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+from app.core.config import get_settings
+
+settings = get_settings()
+REDIS_URL = settings.redis_url
 CACHE_TTL = 300  # 5 minutos en segundos
 
 _redis_client = None
@@ -49,7 +51,7 @@ async def get_redis_client():
     return _redis_client
 
 
-async def cache_get(key: str) -> Optional[Any]:
+async def cache_get(key: str) -> Any | None:
     """Obtiene un valor del caché. Retorna None si no existe o Redis no está disponible."""
     try:
         client = await get_redis_client()
@@ -59,8 +61,8 @@ async def cache_get(key: str) -> Optional[Any]:
         value = await client.get(key)
         if value is not None:
             return json.loads(value)
-    except Exception:
-        pass
+    except Exception:  # noqa: BLE001
+        return None
     return None
 
 
@@ -73,7 +75,7 @@ async def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
     try:
         await client.set(key, json.dumps(value, default=str), ex=ttl)
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -86,7 +88,7 @@ async def cache_delete(key: str) -> bool:
     try:
         await client.delete(key)
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 

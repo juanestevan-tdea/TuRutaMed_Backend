@@ -1,19 +1,20 @@
-from fastapi import APIRouter, status, Depends, Query
-from typing import List
-from app.schemas.ruta_schema import RutaCreate
+
+from fastapi import APIRouter, Depends, Query, status
+
+from app.core.seguridad import verificar_rol_admin
 from app.models.ruta_mongo import (
+    buscar_paraderos_cercanos_db,
     insertar_ruta_db,
     obtener_todas_las_rutas_db,
-    buscar_paraderos_cercanos_db,
 )
-from app.core.seguridad import verificar_rol_admin
+from app.schemas.ruta_schema import RutaCreate
 from app.services.cache_service import cache_get, cache_set, make_cache_key
 
 router = APIRouter(prefix="/rutas", tags=["Gestión de Rutas y Transporte (MongoDB)"])
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-def crear_ruta(ruta: RutaCreate, admin: dict = Depends(verificar_rol_admin)):
+def crear_ruta(ruta: RutaCreate, admin: dict = Depends(verificar_rol_admin)):  # noqa: B008
     """Crea una nueva ruta de transporte público (solo administradores)."""
     ruta_dict = ruta.dict(by_alias=True)
     nuevo_id = insertar_ruta_db(ruta_dict)
@@ -23,7 +24,7 @@ def crear_ruta(ruta: RutaCreate, admin: dict = Depends(verificar_rol_admin)):
     }
 
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=list[dict])
 async def listar_rutas(
     limit: int = Query(default=10, ge=1, le=100, description="Máximo de elementos por página"),
     skip: int = Query(default=0, ge=0, description="Desplazamiento (offset)"),
@@ -39,7 +40,7 @@ async def listar_rutas(
     return paginated
 
 
-@router.get("/cercanos", response_model=List[dict])
+@router.get("/cercanos", response_model=list[dict])
 async def consultar_rutas_cercanas(
     longitud: float,
     latitud: float,

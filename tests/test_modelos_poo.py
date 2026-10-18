@@ -1,16 +1,16 @@
-import pytest
 from app.domain.modelos_poo import (
-    Ruta,
-    Notificacion,
-    Viaje,
     AlternativaTransporte,
-    ViajeMultimodal,
-    ReporteServicio,
-    TarjetaCivica,
-    RecargaCivica,
-    RutaAccesible,
     HistorialViajes,
+    Notificacion,
+    RecargaCivica,
+    ReporteServicio,
+    Ruta,
+    RutaAccesible,
+    TarjetaCivica,
+    Viaje,
+    ViajeMultimodal,
 )
+
 
 def test_rf01_consultar_rutas():
     ruta = Ruta("Manrique - Centro", "05:00 - 22:30")

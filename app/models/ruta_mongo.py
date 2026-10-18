@@ -1,5 +1,5 @@
+
 from app.database import mongo_db
-from bson import ObjectId
 
 coleccion_rutas = mongo_db["rutas"] if mongo_db is not None else None
 
@@ -8,7 +8,7 @@ coleccion_rutas = mongo_db["rutas"] if mongo_db is not None else None
 if coleccion_rutas is not None:
     try:
         coleccion_rutas.create_index([("paraderos.coordenadas", "2dsphere")])
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"⚠️ No se pudo inicializar el índice 2dsphere en rutas: {e}")
 
 def insertar_ruta_db(ruta_data: dict):

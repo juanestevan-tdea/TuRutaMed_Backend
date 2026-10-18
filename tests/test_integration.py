@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_flujo_jwt_completo(client):

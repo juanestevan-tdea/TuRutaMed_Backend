@@ -14,14 +14,14 @@ o se invoca automáticamente desde main.py si la colección está vacía.
 ==============================================================================
 """
 
-from typing import List, Dict, Any
-from app.database import get_mongo_db
+from typing import Any
 
+from app.database import get_mongo_db
 
 # ----------------------------------------------------------------------------
 # Catálogo de rutas reales del SITVA / Valle de Aburrá
 # ----------------------------------------------------------------------------
-SITVA_ROUTES: List[Dict[str, Any]] = [
+SITVA_ROUTES: list[dict[str, Any]] = [
     # ---------------- Metro de Medellín ----------------
     {
         "nombre_ruta": "Línea A: Niquía - La Estrella",

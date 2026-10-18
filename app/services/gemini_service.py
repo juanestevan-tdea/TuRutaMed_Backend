@@ -10,11 +10,14 @@ Dependencia: google-genai
 ==============================================================================
 """
 
-import os
-from typing import Optional
+
 from fastapi import HTTPException, status
 from google import genai
 from google.genai import types
+
+from app.core.config import get_settings
+
+settings = get_settings()
 
 
 # Prompt de sistema experto en transporte metropolitano del Valle de Aburrá
@@ -35,7 +38,7 @@ SYSTEM_PROMPT = (
 
 def _get_client() -> genai.Client:
     """Obtiene el cliente de Gemini configurado con la API key del entorno."""
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = settings.gemini_api_key
     if not api_key:
         raise RuntimeError(
             "La variable de entorno GEMINI_API_KEY no está configurada."
@@ -45,7 +48,7 @@ def _get_client() -> genai.Client:
 
 def obtener_modelo_disponible() -> str:
     """Consulta dinámicamente los modelos disponibles y retorna el primero que soporte generateContent."""
-    fallback = "gemini-3.8-flash"
+    fallback = settings.gemini_model
     try:
         client = _get_client()
         for modelo in client.models.list():
@@ -56,13 +59,13 @@ def obtener_modelo_disponible() -> str:
                 nombre_limpio = nombre.split("/")[-1] if "/" in nombre else nombre
                 print(f"Usando modelo: {nombre_limpio}")
                 return nombre_limpio
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[IA] No se pudo listar modelos disponibles: {e}")
     print(f"Usando modelo de respaldo: {fallback}")
     return fallback
 
 
-def consultar_asistente_rutas(prompt_usuario: str, modelo: Optional[str] = None) -> str:
+def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) -> str:
     """
     Consulta al asistente de IA sobre rutas y movilidad en el Valle de Aburrá.
     Usa un modelo disponible dinámicamente y hace fallback a gemini-1.5-flash si falla.
@@ -71,7 +74,7 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: Optional[str] = None)
     if modelo is None:
         modelo = obtener_modelo_disponible()
 
-    modelos_a_intentar = [modelo, "gemini-1.5-flash", "gemini-3.8-flash"]
+    modelos_a_intentar = [modelo, settings.gemini_model]
     # Eliminar duplicados manteniendo orden
     vistos = set()
     modelos_unicos = []
@@ -95,7 +98,7 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: Optional[str] = None)
             )
             print(f"[IA] Respuesta generada con el modelo: {modelo_actual}")
             return response.text
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ultimo_error = e
             print(f"[IA] Fallo con el modelo {modelo_actual}: {e}")
             continue
@@ -108,7 +111,7 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: Optional[str] = None)
 
 
 def optimizar_itinerario_multimodal(
-    origen: str, destino: str, alertas: Optional[list] = None
+    origen: str, destino: str, alertas: list | None = None
 ) -> str:
     """
     Solicita a Gemini la optimización de un itinerario multimodal entre dos puntos.

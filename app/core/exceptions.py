@@ -1,8 +1,9 @@
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pymongo.errors import PyMongoError
 from sqlalchemy.exc import SQLAlchemyError
+
 
 def registrar_manejadores_excepciones(app):
     """Registra interceptores globales de errores para la API de TuRutaMed"""

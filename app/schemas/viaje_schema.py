@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel, Field
-from typing import List, Optional
 
 
 class DuracionViajeRequest(BaseModel):
@@ -16,12 +16,12 @@ class DuracionViajeRespuesta(BaseModel):
 
 
 class ViajeMultimodalRequest(BaseModel):
-    secuencia_rutas: List[str] = Field(
+    secuencia_rutas: list[str] = Field(
         ..., example=["Metro Línea A", "Metrocable Línea K", "Bus Alimentador"]
     )
 
 
 class ViajeMultimodalRespuesta(BaseModel):
-    secuencia_rutas: List[str]
+    secuencia_rutas: list[str]
     itinerario: str
     mensaje: str = "Itinerario multimodal generado exitosamente"

@@ -1,10 +1,10 @@
-import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from app.services.gemini_service import (
+    analizar_congestion_vial,
     consultar_asistente_rutas,
     optimizar_itinerario_multimodal,
-    analizar_congestion_vial,
 )
 
 router = APIRouter(prefix="/ia", tags=["Inteligencia Artificial - Asistente TuRutaMed"])
@@ -38,7 +38,7 @@ def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
             "asistente": "TuRutaMed AI",
             "respuesta": respuesta,
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error real de la IA: {e}")
         return {
             "estado": "fallback",
@@ -61,8 +61,8 @@ def optimizar_ruta(request: OptimizarRutaRequest):
             "asistente": "TuRutaMed AI",
             "itinerario": respuesta,
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {e!s}")
 
 
 @router.post("/analizar-congestion")
@@ -75,5 +75,5 @@ def analizar_congestion(request: AnalizarCongestionRequest):
             "asistente": "TuRutaMed AI",
             "analisis": respuesta,
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {e!s}")

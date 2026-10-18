@@ -1,15 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from app.core.seguridad import (
+    crear_token_acceso,
+    obtener_hash_contrasena,
+    verificar_contrasena,
+)
 from app.database import get_mysql_db
 from app.models.usuario import Usuario
-from app.schemas.usuario_schema import UsuarioRegistro, UsuarioRespuesta, UsuarioLogin, Token
-from app.core.seguridad import obtener_hash_contrasena, verificar_contrasena, crear_token_acceso
+from app.schemas.usuario_schema import (
+    Token,
+    UsuarioLogin,
+    UsuarioRegistro,
+    UsuarioRespuesta,
+)
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
 # 1. RUTA DE REGISTRO (La que ya teníamos)
 @router.post("/registro", response_model=UsuarioRespuesta, status_code=status.HTTP_201_CREATED)
-def registrar_usuario(usuario_in: UsuarioRegistro, db: Session = Depends(get_mysql_db)):
+def registrar_usuario(usuario_in: UsuarioRegistro, db: Session = Depends(get_mysql_db)):  # noqa: B008
     usuario_existente = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
     if usuario_existente:
         raise HTTPException(status_code=400, detail="Este correo electrónico ya está registrado.")
@@ -30,7 +40,7 @@ def registrar_usuario(usuario_in: UsuarioRegistro, db: Session = Depends(get_mys
 
 # 2. NUEVA RUTA DE LOGIN
 @router.post("/login", response_model=Token)
-def iniciar_sesion(usuario_in: UsuarioLogin, db: Session = Depends(get_mysql_db)):
+def iniciar_sesion(usuario_in: UsuarioLogin, db: Session = Depends(get_mysql_db)):  # noqa: B008
     
     # A. Buscamos al usuario en la BD por su email
     usuario_bd = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
