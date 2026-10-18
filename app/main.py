@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.health import router as health_router
 from app.core.config import get_settings
 from app.core.exceptions import registrar_manejadores_excepciones
 from app.database import Base, engine, get_mongo_db
@@ -37,6 +38,9 @@ app = FastAPI(
 
 # REGISTRAR EXCEPCIONES GLOBALES
 registrar_manejadores_excepciones(app)
+
+# Health checks (sin prefijo de versión para orquestadores)
+app.include_router(health_router)
 
 # MIDDLEWARE CORS
 app.add_middleware(

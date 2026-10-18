@@ -44,11 +44,15 @@ def get_mongo_db():
 
 
 try:
-    mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    use_tls = "mongodb+srv://" in MONGO_URI or "tls=true" in MONGO_URI.lower()
+    client_kwargs = {"tlsCAFile": certifi.where()} if use_tls else {}
+    mongo_client = MongoClient(MONGO_URI, **client_kwargs)
     mongo_db = mongo_client[MONGO_DB_NAME]
     mongo_client.admin.command("ping")
     print(f"✅ Conexión exitosa a MongoDB (Base de datos: {MONGO_DB_NAME})")
 except Exception as e:  # noqa: BLE001
+    mongo_client = None
+    mongo_db = None
     print(
         "❌ Error conectando a MongoDB: Verifica tu usuario/contraseña o tu "
         f"conexión a internet.\nDetalle: {e}"
