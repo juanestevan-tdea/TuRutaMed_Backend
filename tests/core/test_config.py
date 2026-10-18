@@ -12,7 +12,9 @@ REQUIRED = {
 }
 
 
-def test_missing_jwt_secret_raises():
+def test_missing_jwt_secret_raises(monkeypatch):
+    for var in ("JWT_SECRET", "JWT_SECRET_KEY", "SECRET_KEY"):
+        monkeypatch.delenv(var, raising=False)
     data = dict(REQUIRED)
     del data["jwt_secret"]
     with pytest.raises(ValidationError):

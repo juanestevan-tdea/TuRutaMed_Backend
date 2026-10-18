@@ -18,12 +18,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_expire_minutes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _truncar_contrasena(contrasena: str) -> str:
+    """Trunca la contraseña a 72 bytes (límite de bcrypt) de forma segura."""
+    return contrasena.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+
+
 def obtener_hash_contrasena(contrasena: str):
-    return pwd_context.hash(contrasena)
+    return pwd_context.hash(_truncar_contrasena(contrasena))
 
 
 def verificar_contrasena(contrasena_plana: str, contrasena_hasheada: str):
-    return pwd_context.verify(contrasena_plana, contrasena_hasheada)
+    return pwd_context.verify(_truncar_contrasena(contrasena_plana), contrasena_hasheada)
 
 
 def crear_token_acceso(data: dict):
