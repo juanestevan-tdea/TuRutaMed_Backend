@@ -54,6 +54,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: "requirements.txt"  # cache-bust: bcrypt 4.0.1
 
       - name: Install dependencies
         run: |
