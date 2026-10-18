@@ -11,11 +11,13 @@ if coleccion_alertas is not None:
     except Exception as e:  # noqa: BLE001
         print(f"⚠️ No se pudo inicializar el índice 2dsphere en alertas: {e}")
 
+
 def insertar_alerta_db(alerta_data: dict):
     """Inserta una nueva incidencia o reporte ciudadano en MongoDB Atlas"""
     alerta_data["fecha_reporte"] = datetime.now(UTC).isoformat()
     resultado = coleccion_alertas.insert_one(alerta_data)
     return str(resultado.inserted_id)
+
 
 def obtener_alertas_db():
     """Obtiene todas las alertas e incidencias activas en la ciudad"""

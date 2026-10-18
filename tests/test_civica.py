@@ -36,11 +36,15 @@ def test_recarga_exitosa(client, auth_headers):
 
 def test_consultar_saldo_despues_recarga(client, auth_headers):
     """Verifica que el saldo persista tras una recarga."""
-    client.post("/civica/recargar", json={
-        "tarjeta_id": "777777",
-        "monto": 15000.0,
-        "metodo_de_pago": "Nequi",
-    }, headers=auth_headers)
+    client.post(
+        "/civica/recargar",
+        json={
+            "tarjeta_id": "777777",
+            "monto": 15000.0,
+            "metodo_de_pago": "Nequi",
+        },
+        headers=auth_headers,
+    )
     response = client.get("/civica/saldo/777777")
     assert response.status_code == 200
     assert response.json()["saldo"] == 15000.0

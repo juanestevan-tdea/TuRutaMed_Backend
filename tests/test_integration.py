@@ -1,5 +1,3 @@
-
-
 def test_flujo_jwt_completo(client):
     """
     Prueba de integración: Registro -> Login -> Obtener Token -> Consumir endpoint protegido.
@@ -51,10 +49,13 @@ def test_flujo_jwt_completo(client):
     else:
         # Si no se pudo hacer login (ej. usuario no creado por falta de DB),
         # verificamos al menos que el endpoint protegido rechace sin token
-        resp_sin_token = client.post("/reportes/", json={
-            "calificacion": 3,
-            "comentario_ciudadano": "Sin token",
-        })
+        resp_sin_token = client.post(
+            "/reportes/",
+            json={
+                "calificacion": 3,
+                "comentario_ciudadano": "Sin token",
+            },
+        )
         assert resp_sin_token.status_code in [401, 403, 422]
 
 

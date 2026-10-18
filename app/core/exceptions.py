@@ -16,8 +16,8 @@ def registrar_manejadores_excepciones(app):
                 "estado": "error",
                 "codigo": 422,
                 "mensaje": "Los datos enviados no tienen el formato correcto.",
-                "detalles": exc.errors()
-            }
+                "detalles": exc.errors(),
+            },
         )
 
     @app.exception_handler(PyMongoError)
@@ -28,8 +28,8 @@ def registrar_manejadores_excepciones(app):
                 "estado": "error",
                 "codigo": 500,
                 "mensaje": "Error de comunicación con la base de datos geográfica (MongoDB Atlas).",
-                "detalles": str(exc)
-            }
+                "detalles": str(exc),
+            },
         )
 
     @app.exception_handler(SQLAlchemyError)
@@ -40,6 +40,6 @@ def registrar_manejadores_excepciones(app):
                 "estado": "error",
                 "codigo": 500,
                 "mensaje": "Error en el motor de usuarios y autenticación (MySQL).",
-                "detalles": "Ocurrió un problema interno en el servidor."
-            }
+                "detalles": "Ocurrió un problema interno en el servidor.",
+            },
         )

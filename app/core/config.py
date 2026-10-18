@@ -45,9 +45,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(
         ...,
         min_length=32,
-        validation_alias=AliasChoices(
-            "JWT_SECRET", "JWT_SECRET_KEY", "SECRET_KEY"
-        ),
+        validation_alias=AliasChoices("JWT_SECRET", "JWT_SECRET_KEY", "SECRET_KEY"),
     )
     jwt_algorithm: str = Field(
         default="HS256",
@@ -55,9 +53,7 @@ class Settings(BaseSettings):
     )
     jwt_expire_minutes: int = Field(
         default=30,
-        validation_alias=AliasChoices(
-            "JWT_EXPIRE_MINUTES", "ACCESS_TOKEN_EXPIRE_MINUTES"
-        ),
+        validation_alias=AliasChoices("JWT_EXPIRE_MINUTES", "ACCESS_TOKEN_EXPIRE_MINUTES"),
     )
 
     # IA (Gemini)
@@ -100,7 +96,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Retorna la instancia cacheada de Settings."""
-    return Settings()
+    return Settings()  # type: ignore[call-arg]
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]

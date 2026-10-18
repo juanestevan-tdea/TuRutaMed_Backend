@@ -60,7 +60,7 @@ export default function Civica() {
 
   useEffect(() => {
     consultarSaldo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // (react-hooks plugin not configured)
   }, []);
 
   const saldoMostrado = saldo !== null ? saldo : 15500;

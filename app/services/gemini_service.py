@@ -10,7 +10,6 @@ Dependencia: google-genai
 ==============================================================================
 """
 
-
 from fastapi import HTTPException, status
 from google import genai
 from google.genai import types
@@ -40,9 +39,7 @@ def _get_client() -> genai.Client:
     """Obtiene el cliente de Gemini configurado con la API key del entorno."""
     api_key = settings.gemini_api_key
     if not api_key:
-        raise RuntimeError(
-            "La variable de entorno GEMINI_API_KEY no está configurada."
-        )
+        raise RuntimeError("La variable de entorno GEMINI_API_KEY no está configurada.")
     return genai.Client(api_key=api_key)
 
 
@@ -97,7 +94,7 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) ->
                 ),
             )
             print(f"[IA] Respuesta generada con el modelo: {modelo_actual}")
-            return response.text
+            return str(response.text)
         except Exception as e:  # noqa: BLE001
             ultimo_error = e
             print(f"[IA] Fallo con el modelo {modelo_actual}: {e}")
@@ -110,9 +107,7 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) ->
     ) from ultimo_error
 
 
-def optimizar_itinerario_multimodal(
-    origen: str, destino: str, alertas: list | None = None
-) -> str:
+def optimizar_itinerario_multimodal(origen: str, destino: str, alertas: list | None = None) -> str:
     """
     Solicita a Gemini la optimización de un itinerario multimodal entre dos puntos.
     Lanza HTTP 503 si el servicio externo no está disponible.

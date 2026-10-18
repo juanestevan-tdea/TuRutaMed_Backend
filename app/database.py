@@ -1,3 +1,5 @@
+from typing import Any
+
 import certifi
 from pymongo import MongoClient
 from sqlalchemy import create_engine
@@ -34,8 +36,8 @@ def get_mysql_db():
 MONGO_URI = settings.mongo_url
 MONGO_DB_NAME = settings.mongo_db_name
 
-mongo_client = None
-mongo_db = None
+mongo_client: Any = None
+mongo_db: Any = None
 
 
 def get_mongo_db():
@@ -45,8 +47,10 @@ def get_mongo_db():
 
 try:
     use_tls = "mongodb+srv://" in MONGO_URI or "tls=true" in MONGO_URI.lower()
-    client_kwargs = {"tlsCAFile": certifi.where()} if use_tls else {}
-    mongo_client = MongoClient(MONGO_URI, **client_kwargs)
+    if use_tls:
+        mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    else:
+        mongo_client = MongoClient(MONGO_URI)
     mongo_db = mongo_client[MONGO_DB_NAME]
     mongo_client.admin.command("ping")
     print(f"✅ Conexión exitosa a MongoDB (Base de datos: {MONGO_DB_NAME})")

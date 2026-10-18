@@ -19,6 +19,7 @@ CHECK_TIMEOUT = 2.0
 
 async def _check_mysql() -> float:
     """Ping a MySQL usando el engine/pool existente. Retorna latencia en ms."""
+
     def _ping() -> None:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -70,14 +71,12 @@ async def health_ready() -> dict[str, Any]:
     mongo_task = _check_mongo()
     redis_task = _check_redis()
 
-    results = await asyncio.gather(
-        mysql_task, mongo_task, redis_task, return_exceptions=True
-    )
+    results = await asyncio.gather(mysql_task, mongo_task, redis_task, return_exceptions=True)
 
     names = ("mysql", "mongo", "redis")
     checks: dict[str, dict[str, Any]] = {}
     all_up = True
-    for name, result in zip(names, results):
+    for name, result in zip(names, results, strict=False):
         if isinstance(result, BaseException):
             checks[name] = {"status": "down"}
             all_up = False

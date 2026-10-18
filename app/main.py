@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,13 +24,34 @@ app = FastAPI(
     description="API REST para planificacion multimodal, consulta de saldo Civica y alertas de movilidad en el Valle de Aburra.",
     version=settings.app_version,
     openapi_tags=[
-        {"name": "Usuarios", "description": "Registro, autenticación y gestión de usuarios (RBAC)."},
-        {"name": "Gestión de Rutas y Transporte (MongoDB)", "description": "Consulta de rutas, paraderos y geolocalización."},
-        {"name": "Modo Waze - Reportes en Tiempo Real (MongoDB)", "description": "Reporte y consulta de alertas viales geoespaciales."},
-        {"name": "Tarjeta Cívica (RF-07, RF-08)", "description": "Consulta de saldo y recarga de tarjeta Cívica."},
-        {"name": "Viajes y Multimodalidad (RF-03, RF-05)", "description": "Cálculo de duración e itinerarios multimodales."},
-        {"name": "Reportes Ciudadanos (RF-06)", "description": "Registro de calificaciones y reportes del servicio."},
-        {"name": "Inteligencia Artificial - Asistente TuRutaMed", "description": "Recomendaciones multimodales con Gemini AI."},
+        {
+            "name": "Usuarios",
+            "description": "Registro, autenticación y gestión de usuarios (RBAC).",
+        },
+        {
+            "name": "Gestión de Rutas y Transporte (MongoDB)",
+            "description": "Consulta de rutas, paraderos y geolocalización.",
+        },
+        {
+            "name": "Modo Waze - Reportes en Tiempo Real (MongoDB)",
+            "description": "Reporte y consulta de alertas viales geoespaciales.",
+        },
+        {
+            "name": "Tarjeta Cívica (RF-07, RF-08)",
+            "description": "Consulta de saldo y recarga de tarjeta Cívica.",
+        },
+        {
+            "name": "Viajes y Multimodalidad (RF-03, RF-05)",
+            "description": "Cálculo de duración e itinerarios multimodales.",
+        },
+        {
+            "name": "Reportes Ciudadanos (RF-06)",
+            "description": "Registro de calificaciones y reportes del servicio.",
+        },
+        {
+            "name": "Inteligencia Artificial - Asistente TuRutaMed",
+            "description": "Recomendaciones multimodales con Gemini AI.",
+        },
         {"name": "Inicio", "description": "Endpoints de salud y estado del sistema."},
     ],
 )
@@ -116,13 +136,13 @@ async def health_check():
 def leer_raiz():
     return {
         "mensaje": "¡Bienvenido a la API de TuRutaMed!",
-        "estado": "Servidor funcionando correctamente al 100%"
+        "estado": "Servidor funcionando correctamente al 100%",
     }
+
 
 @app.get("/estado-roles", tags=["Pruebas"])
 def probar_roles():
     return {
         "roles_soportados": ["Usuario_Regular", "Pasajero_Multimodal", "Administrador_Sistema"],
-        "seguridad": "JWT Auth activo con RBAC"
+        "seguridad": "JWT Auth activo con RBAC",
     }
-

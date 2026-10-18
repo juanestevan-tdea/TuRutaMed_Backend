@@ -12,7 +12,6 @@ Representación de la lógica de negocio para los Requisitos Funcionales RF-01 a
 """
 
 
-
 # ============================================================================
 # RF-01: Consultar rutas y horarios
 # ============================================================================

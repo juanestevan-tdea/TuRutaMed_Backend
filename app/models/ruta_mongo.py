@@ -1,4 +1,3 @@
-
 from app.database import mongo_db
 
 coleccion_rutas = mongo_db["rutas"] if mongo_db is not None else None
@@ -11,10 +10,12 @@ if coleccion_rutas is not None:
     except Exception as e:  # noqa: BLE001
         print(f"⚠️ No se pudo inicializar el índice 2dsphere en rutas: {e}")
 
+
 def insertar_ruta_db(ruta_data: dict):
     """Inserta una nueva ruta de transporte con geolocalización en MongoDB Atlas"""
     resultado = coleccion_rutas.insert_one(ruta_data)
     return str(resultado.inserted_id)
+
 
 def obtener_todas_las_rutas_db():
     """Consulta todas las rutas geolocalizadas disponibles"""
@@ -23,6 +24,8 @@ def obtener_todas_las_rutas_db():
         ruta["_id"] = str(ruta["_id"])
         rutas.append(ruta)
     return rutas
+
+
 def buscar_paraderos_cercanos_db(longitud: float, latitud: float, max_distancia_metros: int = 3000):
     """
     Busca rutas que contengan paraderos cercanos a una coordenada dada (Estilo Google Maps)
@@ -31,11 +34,8 @@ def buscar_paraderos_cercanos_db(longitud: float, latitud: float, max_distancia_
     query = {
         "paraderos.coordenadas": {
             "$near": {
-                "$geometry": {
-                    "type": "Point",
-                    "coordinates": [longitud, latitud]
-                },
-                "$maxDistance": max_distancia_metros
+                "$geometry": {"type": "Point", "coordinates": [longitud, latitud]},
+                "$maxDistance": max_distancia_metros,
             }
         }
     }

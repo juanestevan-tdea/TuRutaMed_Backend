@@ -121,7 +121,11 @@ SITVA_ROUTES: list[dict[str, Any]] = [
             {"nombre_paradero": "Buenos Aires", "coordenadas": [-75.5640, 6.2420], "orden": 3},
             {"nombre_paradero": "Miraflores", "coordenadas": [-75.5600, 6.2400], "orden": 4},
             {"nombre_paradero": "Loyola", "coordenadas": [-75.5560, 6.2380], "orden": 5},
-            {"nombre_paradero": "Alejandro Echavarría", "coordenadas": [-75.5520, 6.2360], "orden": 6},
+            {
+                "nombre_paradero": "Alejandro Echavarría",
+                "coordenadas": [-75.5520, 6.2360],
+                "orden": 6,
+            },
             {"nombre_paradero": "Oriente", "coordenadas": [-75.5480, 6.2340], "orden": 7},
         ],
         "accesible": True,

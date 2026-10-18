@@ -1,5 +1,3 @@
-
-
 def test_calcular_duracion(client):
     """Verifica el cálculo de duración de un viaje (RF-03)."""
     payload = {

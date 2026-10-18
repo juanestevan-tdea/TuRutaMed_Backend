@@ -136,35 +136,33 @@ CREATE TABLE usuarios (
 
 ```python
 # MongoDB: Búsqueda radial con $near
-db.rutas.find({
-    "coordenadas": {
-        "$near": {
-            "$geometry": {
-                "type": "Point",
-                "coordinates": [lon, lat]
-            },
-            "$maxDistance": 2000  # 2 km en metros
+db.rutas.find(
+    {
+        "coordenadas": {
+            "$near": {
+                "$geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "$maxDistance": 2000,  # 2 km en metros
+            }
         }
     }
-})
+)
 ```
 
 ### 4.2. Consulta de Alertas Cercanas (RF-02)
 
 ```python
 # MongoDB: Alertas en radio de proximidad
-db.alertas.find({
-    "coordenadas": {
-        "$near": {
-            "$geometry": {
-                "type": "Point",
-                "coordinates": [lon, lat]
-            },
-            "$maxDistance": 5000  # 5 km en metros
-        }
-    },
-    "estado": "activa"
-}).sort("fecha_reporte", -1).limit(20)
+db.alertas.find(
+    {
+        "coordenadas": {
+            "$near": {
+                "$geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "$maxDistance": 5000,  # 5 km en metros
+            }
+        },
+        "estado": "activa",
+    }
+).sort("fecha_reporte", -1).limit(20)
 ```
 
 ### 4.3. Autenticación de Usuario (RF implícito)
@@ -180,18 +178,17 @@ WHERE email = ? AND activo = TRUE;
 
 ```python
 # MongoDB: Rutas accesibles
-db.rutas.find({
-    "accesible": True,
-    "coordenadas": {
-        "$near": {
-            "$geometry": {
-                "type": "Point",
-                "coordinates": [lon, lat]
-            },
-            "$maxDistance": 2000
-        }
+db.rutas.find(
+    {
+        "accesible": True,
+        "coordenadas": {
+            "$near": {
+                "$geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "$maxDistance": 2000,
+            }
+        },
     }
-})
+)
 ```
 
 ---

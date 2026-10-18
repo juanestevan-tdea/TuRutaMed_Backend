@@ -15,6 +15,7 @@ from typing import Any
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -95,11 +96,12 @@ async def cache_delete(key: str) -> bool:
 def make_cache_key(prefix: str, *args, **kwargs) -> str:
     """Genera una clave de caché determinista a partir de los argumentos."""
     raw = f"{prefix}:{args}:{sorted(kwargs.items())}"
-    return f"turutamed:{hashlib.md5(raw.encode()).hexdigest()}"
+    return f"turutamed:{hashlib.md5(raw.encode(), usedforsecurity=False).hexdigest()}"  # noqa: S324
 
 
 def cached(prefix: str, ttl: int = CACHE_TTL):
     """Decorador para cachear resultados de funciones asíncronas."""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -110,5 +112,7 @@ def cached(prefix: str, ttl: int = CACHE_TTL):
             result = await func(*args, **kwargs)
             await cache_set(cache_key, result, ttl)
             return result
+
         return wrapper
+
     return decorator

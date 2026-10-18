@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field
 
 
@@ -9,6 +8,7 @@ class Paradero(BaseModel):
     coordenadas: list[float] = Field(..., example=[-75.5583, 6.2705])
     orden: int
 
+
 class RutaCreate(BaseModel):
     nombre_ruta: str = Field(..., example="Manrique Oriental - Centro (Integrado)")
     tipo_transporte: str = Field(..., example="Bus Colectivo")
@@ -16,6 +16,7 @@ class RutaCreate(BaseModel):
     destino: str = Field(..., example="Estación Parque Berrio")
     tiempo_estimado_minutos: int = Field(..., example=25)
     paraderos: list[Paradero] = []
+
 
 class RutaRespuesta(RutaCreate):
     id: str | None = Field(None, alias="_id")

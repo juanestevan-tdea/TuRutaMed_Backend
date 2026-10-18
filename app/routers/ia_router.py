@@ -62,7 +62,7 @@ def optimizar_ruta(request: OptimizarRutaRequest):
             "itinerario": respuesta,
         }
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error al optimizar la ruta: {e!s}") from e
 
 
 @router.post("/analizar-congestion")
@@ -76,4 +76,4 @@ def analizar_congestion(request: AnalizarCongestionRequest):
             "analisis": respuesta,
         }
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error al analizar congestión: {e!s}") from e

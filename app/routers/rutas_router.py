@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, Query, status
 
 from app.core.seguridad import verificar_rol_admin
@@ -35,7 +34,7 @@ async def listar_rutas(
     if cached is not None:
         return cached
     rutas = obtener_todas_las_rutas_db()
-    paginated = rutas[skip:skip + limit]
+    paginated = rutas[skip : skip + limit]
     await cache_set(cache_key, paginated)
     return paginated
 
@@ -48,11 +47,13 @@ async def consultar_rutas_cercanas(
     skip: int = Query(default=0, ge=0, description="Desplazamiento (offset)"),
 ):
     """Busca rutas cercanas a una ubicación dada (público, con caché y paginación)."""
-    cache_key = make_cache_key("rutas:cercanos", longitud=longitud, latitud=latitud, limit=limit, skip=skip)
+    cache_key = make_cache_key(
+        "rutas:cercanos", longitud=longitud, latitud=latitud, limit=limit, skip=skip
+    )
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached
     rutas = buscar_paraderos_cercanos_db(longitud, latitud)
-    paginated = rutas[skip:skip + limit]
+    paginated = rutas[skip : skip + limit]
     await cache_set(cache_key, paginated)
     return paginated

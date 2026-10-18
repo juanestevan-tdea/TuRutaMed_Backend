@@ -12,7 +12,9 @@ from app.schemas.viaje_schema import (
 router = APIRouter(prefix="/viajes", tags=["Viajes y Multimodalidad (RF-03, RF-05)"])
 
 
-@router.post("/calcular-duracion", response_model=DuracionViajeRespuesta, status_code=status.HTTP_200_OK)
+@router.post(
+    "/calcular-duracion", response_model=DuracionViajeRespuesta, status_code=status.HTTP_200_OK
+)
 def calcular_duracion(payload: DuracionViajeRequest):
     """Estima la duración de un viaje entre origen y destino (RF-03)."""
     viaje = Viaje(
@@ -44,8 +46,8 @@ def consultar_historial(
     current_user: dict = Depends(get_current_user),  # noqa: B008
 ):
     """Consulta el historial de viajes del usuario autenticado (RF-10). Requiere JWT. Con paginación."""
-    historial = []
-    paginated = historial[skip:skip + limit]
+    historial: list = []
+    paginated = historial[skip : skip + limit]
     return {
         "usuario": current_user.get("sub"),
         "historial": paginated,

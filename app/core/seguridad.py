@@ -53,7 +53,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             raise credentials_exception
         return payload
     except JWTError:
-        raise credentials_exception
+        raise credentials_exception from None
 
 
 def verificar_rol_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):  # noqa: B008
@@ -75,4 +75,4 @@ def verificar_rol_admin(credentials: HTTPAuthorizationCredentials = Depends(secu
             )
         return payload
     except JWTError:
-        raise credentials_exception
+        raise credentials_exception from None

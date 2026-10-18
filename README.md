@@ -1,3 +1,5 @@
+[![CI](https://github.com/juanestevan-tdea/TuRutaMed_Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/juanestevan-tdea/TuRutaMed_Backend/actions/workflows/ci.yml)
+
 # 🚍 TuRutaMed Backend API
 
 > Sistema integral y plataforma backend de alta disponibilidad para la gestión inteligente del transporte público multimodal, geolocalización geoespacial de paraderos y reportes viales comunitarios en tiempo real en el **Valle de Aburrá (Medellín, Antioquia)**.
