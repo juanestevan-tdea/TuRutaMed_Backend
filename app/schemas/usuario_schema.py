@@ -35,4 +35,9 @@ class UsuarioLogin(BaseModel):
 # Lo que devolvemos si el login es exitoso
 class Token(BaseModel):
     access_token: str
-    token_type: str
+    refresh_token: str | None = None
+    token_type: str = "bearer"  # noqa: S105
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

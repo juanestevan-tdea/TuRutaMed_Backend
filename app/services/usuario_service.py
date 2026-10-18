@@ -2,13 +2,13 @@
 
 from app.core.exceptions import ConflictError, UnauthorizedError
 from app.core.seguridad import (
-    crear_token_acceso,
     obtener_hash_contrasena,
     verificar_contrasena,
 )
 from app.models.usuario import Usuario
 from app.repositories.usuario_repository import UsuarioRepository
 from app.schemas.usuario_schema import Token, UsuarioLogin, UsuarioRegistro
+from app.services.auth_service import login as crear_tokens_login
 
 
 class UsuarioService:
@@ -37,5 +37,5 @@ class UsuarioService:
         if not verificar_contrasena(usuario_in.contrasena, str(usuario_bd.contrasena_encriptada)):
             raise UnauthorizedError(message="Correo o contraseña incorrectos")
 
-        token = crear_token_acceso(data={"sub": usuario_bd.email, "rol": usuario_bd.rol})
-        return Token(access_token=token, token_type="bearer")  # noqa: S106
+        tokens = crear_tokens_login(usuario_bd)
+        return Token(**tokens)

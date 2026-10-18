@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 from app.database import get_mysql_db
 from app.repositories.usuario_repository import UsuarioRepository
 from app.schemas.usuario_schema import (
+    RefreshTokenRequest,
     Token,
     UsuarioLogin,
     UsuarioRegistro,
     UsuarioRespuesta,
 )
+from app.services.auth_service import logout, refresh
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -33,3 +35,15 @@ def iniciar_sesion(
     service: UsuarioService = Depends(get_usuario_service),  # noqa: B008
 ):
     return service.iniciar_sesion(usuario_in)
+
+
+@router.post("/refresh", response_model=Token)
+async def refrescar_token(payload: RefreshTokenRequest):
+    tokens = await refresh(payload.refresh_token)
+    return Token(**tokens)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def cerrar_sesion(payload: RefreshTokenRequest):
+    await logout(payload.refresh_token)
+    return None

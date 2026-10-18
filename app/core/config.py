@@ -55,6 +55,10 @@ class Settings(BaseSettings):
         default=30,
         validation_alias=AliasChoices("JWT_EXPIRE_MINUTES", "ACCESS_TOKEN_EXPIRE_MINUTES"),
     )
+    jwt_refresh_expire_days: int = Field(
+        default=7,
+        validation_alias=AliasChoices("JWT_REFRESH_EXPIRE_DAYS", "REFRESH_TOKEN_EXPIRE_DAYS"),
+    )
 
     # IA (Gemini)
     gemini_api_key: str = Field(
