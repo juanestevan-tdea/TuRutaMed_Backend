@@ -1,11 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1.health import router as health_router
 from app.core.config import get_settings
 from app.core.exceptions import registrar_manejadores_excepciones
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
+from app.core.rate_limit import limiter
 from app.database import Base, engine, get_mongo_db
 from app.database_seeder import seed_rutas_if_empty
 from app.routers import alertas_router, rutas_router, usuarios_router
@@ -66,7 +70,24 @@ registrar_manejadores_excepciones(app)
 # Health checks (sin prefijo de versión para orquestadores)
 app.include_router(health_router)
 
+app.state.limiter = limiter
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SlowAPIMiddleware)
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "type": "https://turutamed.com/errors/RATE_LIMIT_EXCEEDED",
+            "title": "Too Many Requests",
+            "status": 429,
+            "detail": "Rate limit exceeded. Please try again later.",
+            "instance": str(request.url.path),
+        },
+    )
+
 
 # MIDDLEWARE CORS
 app.add_middleware(

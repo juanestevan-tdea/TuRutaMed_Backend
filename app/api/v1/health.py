@@ -4,10 +4,11 @@ import asyncio
 import time
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import text
 
 from app.core.config import get_settings
+from app.core.rate_limit import limiter
 from app.database import engine, get_mongo_db, mongo_client
 from app.services.cache_service import get_redis_client
 
@@ -55,7 +56,8 @@ async def _check_redis() -> float:
 
 
 @router.get("/health/live")
-async def health_live() -> dict[str, Any]:
+@limiter.limit("60/minute")
+async def health_live(request: Request) -> dict[str, Any]:
     """Liveness probe: el proceso responde."""
     return {
         "status": "alive",
@@ -64,6 +66,7 @@ async def health_live() -> dict[str, Any]:
     }
 
 
+@limiter.exempt
 @router.get("/health/ready")
 async def health_ready() -> dict[str, Any]:
     """Readiness probe: verifica MySQL, Mongo y Redis en paralelo."""

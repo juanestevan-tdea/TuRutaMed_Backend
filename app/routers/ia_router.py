@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from app.core.exceptions import DomainException
+from app.core.rate_limit import limiter
 from app.services.gemini_service import (
     analizar_congestion_vial,
     consultar_asistente_rutas,
@@ -26,14 +27,15 @@ class AnalizarCongestionRequest(BaseModel):
 
 
 @router.post("/asistente-ruta")
-def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
+@limiter.limit("10/minute")
+def consultar_asistente_transporte(request: Request, body: ConsultaMovilidadRequest):
     """
     Endpoint modular para consultar opciones de transporte multimodal
     y recomendaciones en Medellín usando Gemini.
     Implementa un patrón de fallback para no romper la experiencia del usuario.
     """
     try:
-        respuesta = consultar_asistente_rutas(request.pregunta)
+        respuesta = consultar_asistente_rutas(body.pregunta)
         return {
             "estado": "exitoso",
             "asistente": "TuRutaMed AI",
@@ -49,13 +51,14 @@ def consultar_asistente_transporte(request: ConsultaMovilidadRequest):
 
 
 @router.post("/optimizar-ruta")
-def optimizar_ruta(request: OptimizarRutaRequest):
+@limiter.limit("10/minute")
+def optimizar_ruta(request: Request, body: OptimizarRutaRequest):
     """Optimiza un itinerario multimodal entre origen y destino usando Gemini AI."""
     try:
         respuesta = optimizar_itinerario_multimodal(
-            origen=request.origen,
-            destino=request.destino,
-            alertas=request.alertas,
+            origen=body.origen,
+            destino=body.destino,
+            alertas=body.alertas,
         )
         return {
             "estado": "exitoso",
@@ -71,10 +74,11 @@ def optimizar_ruta(request: OptimizarRutaRequest):
 
 
 @router.post("/analizar-congestion")
-def analizar_congestion(request: AnalizarCongestionRequest):
+@limiter.limit("10/minute")
+def analizar_congestion(request: Request, body: AnalizarCongestionRequest):
     """Analiza alertas viales y genera un resumen predictivo de congestión."""
     try:
-        respuesta = analizar_congestion_vial(request.alertas)
+        respuesta = analizar_congestion_vial(body.alertas)
         return {
             "estado": "exitoso",
             "asistente": "TuRutaMed AI",
