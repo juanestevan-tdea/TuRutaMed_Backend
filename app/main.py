@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -173,3 +175,13 @@ def probar_roles():
         "roles_soportados": ["Usuario_Regular", "Pasajero_Multimodal", "Administrador_Sistema"],
         "seguridad": "JWT Auth activo con RBAC",
     }
+
+
+# Métricas Prometheus (interno, sin rate limit)
+Instrumentator().instrument(app)
+
+
+@app.get("/metrics", include_in_schema=False)
+@limiter.exempt
+def metrics(request: Request):
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

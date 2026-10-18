@@ -28,4 +28,5 @@ email-validator==2.3.0
 pydantic-settings==2.16.0
 python-json-logger==4.2.0
 slowapi==0.1.10
+prometheus-fastapi-instrumentator==8.1.0
 redis==8.1.0
