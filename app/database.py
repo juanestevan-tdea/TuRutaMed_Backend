@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import certifi # <--- AGREGA ESTA LÍNEA
 
 # Cargar las variables ocultas del archivo .env
 load_dotenv()
@@ -47,7 +48,8 @@ if not MONGO_URI:
     print("❌ Error: No se encontró MONGO_URI en el archivo .env")
 else:
     try:
-        mongo_client = MongoClient(MONGO_URI)
+        # Modifica esta línea agregando el parámetro tlsCAFile
+        mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
         mongo_db = mongo_client[MONGO_DB_NAME]
         # Esto fuerza a que Mongo verifique la conexión (un 'ping')
         mongo_client.admin.command('ping')

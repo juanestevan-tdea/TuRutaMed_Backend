@@ -3,7 +3,7 @@
 ==============================================================================
 TuRutaMed - Servicio de Inteligencia Artificial (Google Gemini)
 ==============================================================================
-Integra el modelo Gemini 2.5 Flash para asistencia en movilidad urbana,
+Integra el modelo Gemini para asistencia en movilidad urbana,
 optimización de rutas multimodales y análisis de congestión vial.
 
 Dependencia: google-genai
@@ -43,15 +43,45 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def consultar_asistente_rutas(prompt_usuario: str, modelo: str = "gemini-2.5-flash") -> str:
+def obtener_modelo_disponible() -> str:
+    """Consulta dinámicamente los modelos disponibles y retorna el primero que soporte generateContent."""
+    fallback = "gemini-3.8-flash"
+    try:
+        client = _get_client()
+        for modelo in client.models.list():
+            nombre = getattr(modelo, "name", None) or getattr(modelo, "model", None)
+            metodos = getattr(modelo, "supported_generation_methods", None) or []
+            if nombre and "generateContent" in (metodos or []):
+                # El nombre puede venir como 'models/gemini-...' o solo el id
+                nombre_limpio = nombre.split("/")[-1] if "/" in nombre else nombre
+                print(f"Usando modelo: {nombre_limpio}")
+                return nombre_limpio
+    except Exception as e:
+        print(f"[IA] No se pudo listar modelos disponibles: {e}")
+    print(f"Usando modelo de respaldo: {fallback}")
+    return fallback
+
+
+def consultar_asistente_rutas(prompt_usuario: str, modelo: Optional[str] = None) -> str:
     """
     Consulta al asistente de IA sobre rutas y movilidad en el Valle de Aburrá.
-    Implementa fallback: si el modelo principal falla, intenta con un modelo alternativo.
+    Usa un modelo disponible dinámicamente y hace fallback a gemini-1.5-flash si falla.
     Lanza HTTP 503 si todos los modelos fallan.
     """
-    modelos_a_intentar = [modelo, "gemini-1.5-flash"]
+    if modelo is None:
+        modelo = obtener_modelo_disponible()
+
+    modelos_a_intentar = [modelo, "gemini-1.5-flash", "gemini-3.8-flash"]
+    # Eliminar duplicados manteniendo orden
+    vistos = set()
+    modelos_unicos = []
+    for m in modelos_a_intentar:
+        if m not in vistos:
+            vistos.add(m)
+            modelos_unicos.append(m)
+
     ultimo_error = None
-    for modelo_actual in modelos_a_intentar:
+    for modelo_actual in modelos_unicos:
         try:
             client = _get_client()
             response = client.models.generate_content(
