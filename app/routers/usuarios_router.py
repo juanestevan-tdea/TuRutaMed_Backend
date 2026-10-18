@@ -1,63 +1,35 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ConflictError, UnauthorizedError
-from app.core.seguridad import (
-    crear_token_acceso,
-    obtener_hash_contrasena,
-    verificar_contrasena,
-)
 from app.database import get_mysql_db
-from app.models.usuario import Usuario
+from app.repositories.usuario_repository import UsuarioRepository
 from app.schemas.usuario_schema import (
     Token,
     UsuarioLogin,
     UsuarioRegistro,
     UsuarioRespuesta,
 )
+from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
 
-# 1. RUTA DE REGISTRO (La que ya teníamos)
+def get_usuario_service(db: Session = Depends(get_mysql_db)):  # noqa: B008
+    repository = UsuarioRepository(db)
+    return UsuarioService(repository)
+
+
 @router.post("/registro", response_model=UsuarioRespuesta, status_code=status.HTTP_201_CREATED)
-def registrar_usuario(usuario_in: UsuarioRegistro, db: Session = Depends(get_mysql_db)):  # noqa: B008
-    usuario_existente = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
-    if usuario_existente:
-        raise ConflictError(message="Este correo electrónico ya está registrado.")
-
-    clave_segura = obtener_hash_contrasena(usuario_in.contrasena)
-    nuevo_usuario = Usuario(
-        nombre=usuario_in.nombre,
-        email=usuario_in.email,
-        contrasena_encriptada=clave_segura,
-        rol=usuario_in.rol,
-    )
-
-    db.add(nuevo_usuario)
-    db.commit()
-    db.refresh(nuevo_usuario)
-    return nuevo_usuario
+def registrar_usuario(
+    usuario_in: UsuarioRegistro,
+    service: UsuarioService = Depends(get_usuario_service),  # noqa: B008
+):
+    return service.registrar_usuario(usuario_in)
 
 
-# 2. NUEVA RUTA DE LOGIN
 @router.post("/login", response_model=Token)
-def iniciar_sesion(usuario_in: UsuarioLogin, db: Session = Depends(get_mysql_db)):  # noqa: B008
-
-    # A. Buscamos al usuario en la BD por su email
-    usuario_bd = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
-    if not usuario_bd:
-        # Si no existe, error 401
-        raise UnauthorizedError(message="Correo o contraseña incorrectos")
-
-    # B. Comparamos la contraseña plana con el hash raro de la BD
-    if not verificar_contrasena(usuario_in.contrasena, str(usuario_bd.contrasena_encriptada)):
-        # Si no cuadra, error 401
-        raise UnauthorizedError(message="Correo o contraseña incorrectos")
-
-    # C. Si todo está perfecto, creamos el Pasaporte (JWT)
-    # Metemos su email y su rol dentro del token para saber quién es cuando vuelva
-    token = crear_token_acceso(data={"sub": usuario_bd.email, "rol": usuario_bd.rol})
-
-    # D. Le entregamos el pasaporte
-    return {"access_token": token, "token_type": "bearer"}
+def iniciar_sesion(
+    usuario_in: UsuarioLogin,
+    service: UsuarioService = Depends(get_usuario_service),  # noqa: B008
+):
+    return service.iniciar_sesion(usuario_in)
