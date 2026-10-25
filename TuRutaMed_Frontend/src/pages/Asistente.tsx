@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
 import api from '../services/api';
+import { getApiErrorMessage } from '../api/errors';
 
 interface Mensaje {
   role: 'user' | 'bot';
@@ -27,13 +28,17 @@ export default function Asistente() {
     setLoading(true);
     try {
       const res = await api.post('/ia/asistente-ruta', { pregunta: userMsg });
-      const respuesta = res.data?.respuesta || 'Sin respuesta.';
+      const respuesta = res.data?.respuesta;
+      if (!respuesta) {
+        throw new Error('El asistente no devolvió una respuesta.');
+      }
       setMensajes((prev) => [...prev, { role: 'bot', text: respuesta }]);
-    } catch {
-      setMensajes((prev) => [
-        ...prev,
-        { role: 'bot', text: 'Lo siento, en este momento no puedo conectarme al servidor. Por favor, intenta de nuevo más tarde.' },
-      ]);
+    } catch (error) {
+      const detalle = getApiErrorMessage(
+        error,
+        'No se pudo obtener respuesta del asistente.',
+      );
+      setMensajes((prev) => [...prev, { role: 'bot', text: `⚠️ ${detalle}` }]);
     } finally {
       setLoading(false);
     }

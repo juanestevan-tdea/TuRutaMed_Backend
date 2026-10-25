@@ -39,7 +39,7 @@ def test_rf05_viaje_multimodal():
 
 def test_rf06_reporte_servicio():
     reporte = ReporteServicio(5, "Excelente servicio")
-    assert reporte.guardar_reporte() is True
+    assert reporte.es_valido() is True
 
 
 def test_rf07_tarjeta_civica():
@@ -49,7 +49,7 @@ def test_rf07_tarjeta_civica():
 
 def test_rf08_recarga_civica():
     recarga = RecargaCivica(20000.0, "PSE")
-    assert recarga.procesar_pago() is True
+    assert recarga.es_valida() is True
 
 
 def test_rf09_ruta_accesible():

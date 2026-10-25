@@ -33,10 +33,20 @@ jobs:
         image: mongo:7.0
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     env:
       MYSQL_URL: "mysql+pymysql://user:pass@localhost:3306/testdb"
       MONGO_URI: "mongodb://localhost:27017/testdb"

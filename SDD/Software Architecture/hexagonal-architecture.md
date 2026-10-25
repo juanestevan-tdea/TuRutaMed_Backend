@@ -193,7 +193,7 @@ flowchart TB
 | :--- | :--- | :--- |
 | `MySQL Adapter` | SQLAlchemy ORM | Persistencia de usuarios y roles |
 | `MongoDB Adapter` | PyMongo Driver | Persistencia de rutas, alertas y consultas geoespaciales |
-| `Gemini Adapter` | `google-genai` SDK | Interacción con Google Gemini 2.5 Flash |
+| `Gemini Adapter` | `google-genai` SDK | Interacción con Google Gemini 3.5 Flash-Lite |
 | `Cívica Adapter` | HTTPS REST | Consulta de saldo y recarga Cívica |
 | `Pagos Adapter` | HTTPS REST | Procesamiento de recargas monetarias |
 

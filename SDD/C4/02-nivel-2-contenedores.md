@@ -29,7 +29,7 @@ C4Container
 
         ContainerDb(mongo, "Base de Datos Documental", "MongoDB Atlas / PyMongo", "Almacena rutas, paraderos georreferenciados (GeoJSON), alertas, reportes y datos multimodales con índices 2dsphere.")
 
-        Container(ia_adapter, "Adaptador de Inteligencia Artificial", "Python / google-genai", "Cliente SDK para Google Gemini 2.5 Flash. Interpreta telemetría vial y optimiza itinerarios multimodales.")
+        Container(ia_adapter, "Adaptador de Inteligencia Artificial", "Python / google-genai", "Cliente SDK para Google Gemini 3.5 Flash-Lite. Interpreta telemetría vial y optimiza itinerarios multimodales.")
 
         Container(auth_module, "Módulo de Seguridad", "Python / Passlib + PyJWT", "Gestiona hashing de contraseñas, emisión y validación de tokens JWT (HS256) y control de roles.")
     }
@@ -94,7 +94,7 @@ C4Container
 - **Integración:** Inyectado como dependencia en routers que requieren autenticación.
 
 ### 3.5. Adaptador de Inteligencia Artificial
-- **Tecnología:** Python / SDK `google-genai` (modelo `gemini-2.5-flash`)
+- **Tecnología:** Python / SDK `google-genai` (modelo `gemini-3.5-flash-lite`)
 - **Responsabilidad:**
   - Construir prompts contextuales con telemetría vial y alertas ciudadanas.
   - Solicitar al modelo la optimización de itinerarios multimodales (`ViajeMultimodal`).

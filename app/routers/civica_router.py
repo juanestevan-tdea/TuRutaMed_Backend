@@ -1,58 +1,41 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
+from sqlalchemy.orm import Session
 
-from app.core.exceptions import DomainException
 from app.core.seguridad import get_current_user
-from app.domain.modelos_poo import RecargaCivica, TarjetaCivica
+from app.database import get_mysql_db
+from app.repositories.civica_repository import CivicaRepository
 from app.schemas.civica_schema import (
     RecargaCivicaRequest,
     RecargaCivicaRespuesta,
     SaldoCivicaRespuesta,
 )
+from app.services.civica_service import CivicaService
 
 router = APIRouter(prefix="/civica", tags=["Tarjeta Cívica (RF-07, RF-08)"])
 
-# Almacén en memoria para simular persistencia de tarjetas (demo/testing)
-_tarjetas: dict = {}
 
-
-def _obtener_o_crear_tarjeta(tarjeta_id: str) -> TarjetaCivica:
-    """Obtiene una tarjeta existente o crea una nueva con saldo inicial de 0."""
-    if tarjeta_id not in _tarjetas:
-        _tarjetas[tarjeta_id] = TarjetaCivica(numero=tarjeta_id, saldo=0.0)
-    return _tarjetas[tarjeta_id]
+def get_civica_service(db: Session = Depends(get_mysql_db)) -> CivicaService:  # noqa: B008
+    return CivicaService(CivicaRepository(db))
 
 
 @router.get("/saldo/{tarjeta_id}", response_model=SaldoCivicaRespuesta)
-def consultar_saldo(tarjeta_id: str):
-    """Consulta el saldo disponible de una tarjeta Cívica (RF-07)."""
-    tarjeta = _obtener_o_crear_tarjeta(tarjeta_id)
-    return SaldoCivicaRespuesta(
-        tarjeta_id=tarjeta.numero,
-        saldo=tarjeta.consultar_saldo(),
-    )
+def consultar_saldo(
+    tarjeta_id: str = Path(..., min_length=1, max_length=32),
+    service: CivicaService = Depends(get_civica_service),  # noqa: B008
+):
+    """Consulta el saldo de una tarjeta Cívica persistida en MySQL (RF-07)."""
+    return service.consultar_saldo(tarjeta_id)
 
 
-@router.post("/recargar", response_model=RecargaCivicaRespuesta, status_code=status.HTTP_200_OK)
-def recargar_tarjeta(payload: RecargaCivicaRequest, current_user: dict = Depends(get_current_user)):  # noqa: B008
-    """Procesa una recarga de saldo a una tarjeta Cívica (RF-08). Requiere JWT."""
-    tarjeta = _obtener_o_crear_tarjeta(payload.tarjeta_id)
-    saldo_anterior = tarjeta.consultar_saldo()
-
-    recarga = RecargaCivica(monto=payload.monto, metodo_de_pago=payload.metodo_de_pago)
-    if not recarga.procesar_pago():
-        raise DomainException(
-            message="El pago no pudo ser procesado por la pasarela.",
-            code="PAYMENT_FAILED",
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-        )
-
-    tarjeta.saldo += payload.monto
-    _tarjetas[payload.tarjeta_id] = tarjeta
-
-    return RecargaCivicaRespuesta(
-        tarjeta_id=payload.tarjeta_id,
-        monto_recargado=payload.monto,
-        saldo_anterior=saldo_anterior,
-        saldo_nuevo=tarjeta.consultar_saldo(),
-        metodo_de_pago=payload.metodo_de_pago,
-    )
+@router.post(
+    "/recargar",
+    response_model=RecargaCivicaRespuesta,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(get_current_user)],
+)
+def recargar_tarjeta(
+    payload: RecargaCivicaRequest,
+    service: CivicaService = Depends(get_civica_service),  # noqa: B008
+):
+    """Recarga saldo y lo persiste de forma transaccional en MySQL (RF-08)."""
+    return service.recargar(payload)

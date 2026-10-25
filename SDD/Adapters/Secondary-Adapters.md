@@ -161,7 +161,7 @@ class Usuario(Base):
 ### 3.3. Gemini Adapter — Inteligencia Artificial Generativa
 
 - **Archivo:** `app/services/gemini_service.py`
-- **Tecnología:** SDK `google-genai` (modelo `gemini-2.5-flash`)
+- **Tecnología:** SDK `google-genai` (modelo `gemini-3.5-flash-lite`)
 - **Responsabilidad:** Optimización de itinerarios multimodales y análisis predictivo de congestión.
 
 **Interfaz (Puerto de Salida):**
@@ -173,13 +173,13 @@ class GeminiClientInterface(Protocol):
 
 **Implementación:**
 - Construye prompts contextuales con telemetría vial y alertas ciudadanas.
-- Envía la solicitud al modelo `gemini-2.5-flash` vía HTTPS.
+- Envía la solicitud al modelo `gemini-3.5-flash-lite` vía HTTPS.
 - Parsea la respuesta generativa y la mapea a entidades de dominio (`ViajeMultimodal`).
 - Maneja errores de cuota, timeout y respuestas malformadas.
 
 **Configuración:**
 - API Key inyectada vía variable de entorno `GEMINI_API_KEY`.
-- Modelo configurable: `gemini-2.5-flash` (por defecto).
+- Modelo configurable: `gemini-3.5-flash-lite` (por defecto).
 - Timeout de solicitud: 30 segundos.
 
 ---

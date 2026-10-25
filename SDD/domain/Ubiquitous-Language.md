@@ -105,7 +105,7 @@ El **Lenguaje Ubicuo** es un vocabulario compartido y preciso utilizado por todo
 
 | Término | Definición | Contexto de Uso |
 | :--- | :--- | :--- |
-| **Gemini AI** | Modelo de lenguaje generativo de Google (gemini-2.5-flash) para optimización de rutas. | IA Service, recomendaciones |
+| **Gemini AI** | Modelo de lenguaje generativo de Google (gemini-3.5-flash-lite) para optimización de rutas. | IA Service, recomendaciones |
 | **Prompt Contextual** | Instrucción estructurada enviada a Gemini con telemetría vial y alertas. | Optimización, análisis |
 | **Optimización Multimodal** | Proceso de IA que sugiere la mejor combinación de transportes para un viaje. | RF-05, ViajeMultimodal |
 | **Análisis Predictivo** | Predicción de congestión vial a partir de alertas ciudadanas históricas. | IA, dashboard, operadores |

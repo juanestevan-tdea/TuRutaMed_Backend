@@ -12,7 +12,6 @@ Dependencia: google-genai
 
 import logging
 
-from fastapi import HTTPException
 from google import genai
 from google.genai import types
 
@@ -22,6 +21,14 @@ from app.core.exceptions import DomainException
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+# Modelos vigentes según la documentación de Gemini API (octubre 2026).
+# El primero es el más económico y con mejor disponibilidad para este caso de uso.
+MODELOS_RESPALDO = (
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+)
 
 
 # Prompt de sistema experto en transporte metropolitano del Valle de Aburrá
@@ -48,45 +55,39 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def obtener_modelo_disponible() -> str:
-    """Consulta dinámicamente los modelos disponibles y retorna el primero que soporte generateContent."""
-    fallback = settings.gemini_model
-    try:
-        client = _get_client()
-        for modelo in client.models.list():
-            nombre = getattr(modelo, "name", None) or getattr(modelo, "model", None)
-            metodos = getattr(modelo, "supported_generation_methods", None) or []
-            if nombre and "generateContent" in (metodos or []):
-                # El nombre puede venir como 'models/gemini-...' o solo el id
-                nombre_limpio = nombre.split("/")[-1] if "/" in nombre else nombre
-                logger.info("Usando modelo Gemini: %s", nombre_limpio)
-                return nombre_limpio
-    except Exception as e:  # noqa: BLE001
-        logger.warning("[IA] No se pudo listar modelos disponibles: %s", e)
-    logger.info("Usando modelo de respaldo: %s", fallback)
-    return fallback
+def _modelos_a_intentar(modelo: str | None = None) -> list[str]:
+    """Construye la lista de modelos sin duplicados, respetando configuración y respaldos."""
+    candidatos = [modelo, settings.gemini_model, *MODELOS_RESPALDO]
+    vistos: set[str] = set()
+    modelos: list[str] = []
+    for candidato in candidatos:
+        if not candidato or candidato in vistos:
+            continue
+        vistos.add(candidato)
+        modelos.append(candidato)
+    return modelos
+
+
+def _resumen_error(error: Exception | None) -> str:
+    """Resume el error real de Gemini para mostrarlo al cliente sin volcar trazas."""
+    if error is None:
+        return "Error desconocido al consultar Gemini."
+    detalle = " ".join(str(error).split())
+    return f"{detalle[:500]}..." if len(detalle) > 500 else detalle
 
 
 def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) -> str:
     """
     Consulta al asistente de IA sobre rutas y movilidad en el Valle de Aburrá.
-    Usa un modelo disponible dinámicamente y hace fallback a gemini-1.5-flash si falla.
-    Lanza HTTP 503 si todos los modelos fallan.
+
+    Intenta el modelo configurado y luego los modelos vigentes de respaldo. Si
+    todos fallan, propaga un 503 con el detalle real del último error para que
+    el frontend pueda informarlo sin ocultarlo tras un mensaje de mantenimiento.
     """
-    if modelo is None:
-        modelo = obtener_modelo_disponible()
+    modelos = _modelos_a_intentar(modelo)
 
-    modelos_a_intentar = [modelo, settings.gemini_model]
-    # Eliminar duplicados manteniendo orden
-    vistos = set()
-    modelos_unicos = []
-    for m in modelos_a_intentar:
-        if m not in vistos:
-            vistos.add(m)
-            modelos_unicos.append(m)
-
-    ultimo_error = None
-    for modelo_actual in modelos_unicos:
+    ultimo_error: Exception | None = None
+    for modelo_actual in modelos:
         try:
             client = _get_client()
             response = client.models.generate_content(
@@ -98,16 +99,22 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) ->
                     max_output_tokens=1024,
                 ),
             )
+            texto = (response.text or "").strip()
+            if not texto:
+                raise RuntimeError("Gemini devolvió una respuesta vacía.")
             logger.info("[IA] Respuesta generada con el modelo: %s", modelo_actual)
-            return str(response.text)
+            return texto
         except Exception as e:  # noqa: BLE001
             ultimo_error = e
             logger.warning("[IA] Fallo con el modelo %s: %s", modelo_actual, e)
-            continue
 
-    logger.error("[IA] Todos los modelos de Gemini fallaron.")
+    detalle = _resumen_error(ultimo_error)
+    logger.error("[IA] Todos los modelos de Gemini fallaron: %s", detalle)
     raise DomainException(
-        message="El servicio de IA no se encuentra disponible temporalmente.",
+        message=(
+            "No se pudo obtener respuesta de Gemini. "
+            f"Modelos intentados: {', '.join(modelos)}. Detalle: {detalle}"
+        ),
         code="AI_SERVICE_UNAVAILABLE",
         status_code=503,
     ) from ultimo_error
@@ -118,27 +125,18 @@ def optimizar_itinerario_multimodal(origen: str, destino: str, alertas: list | N
     Solicita a Gemini la optimización de un itinerario multimodal entre dos puntos.
     Lanza HTTP 503 si el servicio externo no está disponible.
     """
-    try:
-        alertas_texto = ""
-        if alertas:
-            alertas_texto = "\nAlertas viales activas: " + "; ".join(str(a) for a in alertas)
+    alertas_texto = ""
+    if alertas:
+        alertas_texto = "\nAlertas viales activas: " + "; ".join(str(a) for a in alertas)
 
-        prompt = (
-            f"Planifica el mejor itinerario de transporte público multimodal "
-            f"desde '{origen}' hasta '{destino}' en el Valle de Aburrá. "
-            f"Incluye combinaciones de Metro, Metrocable, Tranvía, Metroplús y "
-            f"buses integrados. Indica tiempos estimados y puntos de transferencia. "
-            f"Considera accesibilidad (PMR) si es relevante.{alertas_texto}"
-        )
-        return consultar_asistente_rutas(prompt)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise DomainException(
-            message="El servicio de IA no se encuentra disponible temporalmente.",
-            code="AI_SERVICE_UNAVAILABLE",
-            status_code=503,
-        ) from e
+    prompt = (
+        f"Planifica el mejor itinerario de transporte público multimodal "
+        f"desde '{origen}' hasta '{destino}' en el Valle de Aburrá. "
+        f"Incluye combinaciones de Metro, Metrocable, Tranvía, Metroplús y "
+        f"buses integrados. Indica tiempos estimados y puntos de transferencia. "
+        f"Considera accesibilidad (PMR) si es relevante.{alertas_texto}"
+    )
+    return consultar_asistente_rutas(prompt)
 
 
 def analizar_congestion_vial(alertas: list) -> str:
@@ -146,19 +144,10 @@ def analizar_congestion_vial(alertas: list) -> str:
     Analiza un conjunto de alertas viales y genera un resumen predictivo.
     Lanza HTTP 503 si el servicio externo no está disponible.
     """
-    try:
-        prompt = (
-            "Analiza las siguientes alertas viales reportadas por ciudadanos en "
-            "el Valle de Aburrá y genera un resumen de la situación de tráfico, "
-            "identificando zonas críticas y recomendaciones para los operadores:\n"
-            + "\n".join(str(a) for a in alertas)
-        )
-        return consultar_asistente_rutas(prompt)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise DomainException(
-            message="El servicio de IA no se encuentra disponible temporalmente.",
-            code="AI_SERVICE_UNAVAILABLE",
-            status_code=503,
-        ) from e
+    prompt = (
+        "Analiza las siguientes alertas viales reportadas por ciudadanos en "
+        "el Valle de Aburrá y genera un resumen de la situación de tráfico, "
+        "identificando zonas críticas y recomendaciones para los operadores:\n"
+        + "\n".join(str(a) for a in alertas)
+    )
+    return consultar_asistente_rutas(prompt)

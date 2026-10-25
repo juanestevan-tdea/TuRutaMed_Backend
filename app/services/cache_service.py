@@ -41,7 +41,14 @@ async def get_redis_client():
         )
     if _redis_client is None:
         try:
-            _redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+            # El caché es opcional: si Redis no está disponible, no debe bloquear
+            # la petición durante el timeout TCP por defecto.
+            _redis_client = redis.from_url(
+                REDIS_URL,
+                decode_responses=True,
+                socket_connect_timeout=1,
+                socket_timeout=1,
+            )
             await _redis_client.ping()
         except Exception as e:
             _redis_client = None

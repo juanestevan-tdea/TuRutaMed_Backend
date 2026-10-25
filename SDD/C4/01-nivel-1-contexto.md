@@ -27,7 +27,7 @@ C4Context
         System(turutamed_system, "TuRutaMed Backend API", "Provee servicios REST de ruteo multimodal, telemetría colaborativa geoespacial, autenticación RBAC y gestión de alertas.")
     }
 
-    System_Ext(gemini_ia, "Google Gemini AI", "Servicio de Inteligencia Artificial Generativa (gemini-2.5-flash) para recomendación contextual de rutas y análisis predictivo.")
+    System_Ext(gemini_ia, "Google Gemini AI", "Servicio de Inteligencia Artificial Generativa (gemini-3.5-flash-lite) para recomendación contextual de rutas y análisis predictivo.")
     System_Ext(metro_civica, "Sistema Metro Cívica", "Plataforma de recaudo y validación de tarjetas de viaje del Metro de Medellín.")
     System_Ext(pasarela_pagos, "Pasarela de Pagos (PSE)", "Entidad financiera para el procesamiento y confirmación de recargas digitales de saldo.")
     System_Ext(datos_abiertos, "APIs Abiertas Valle de Aburrá", "Repositorio de datos abiertos gubernamentales (AMVA / Alcaldía) sobre trazados viales y paraderos oficiales.")

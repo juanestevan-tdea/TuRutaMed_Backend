@@ -75,6 +75,22 @@ class ValidationError(DomainException):
         super().__init__(message, code, status_code)
 
 
+def _detalles_validacion(exc: RequestValidationError) -> list[dict]:
+    """Convierte los errores de Pydantic a estructuras serializables en JSON.
+
+    Pydantic v2 puede incluir objetos ``ValueError`` dentro de ``ctx``; esos
+    objetos no son serializables por ``JSONResponse`` y rompen el 422.
+    """
+    detalles: list[dict] = []
+    for error in exc.errors():
+        detalle = dict(error)
+        ctx = detalle.get("ctx")
+        if isinstance(ctx, dict):
+            detalle["ctx"] = {clave: str(valor) for clave, valor in ctx.items()}
+        detalles.append(detalle)
+    return detalles
+
+
 def registrar_manejadores_excepciones(app: Any) -> None:
     """Registra interceptores globales de errores para la API de TuRutaMed"""
 
@@ -100,7 +116,7 @@ def registrar_manejadores_excepciones(app: Any) -> None:
                 "estado": "error",
                 "codigo": 422,
                 "mensaje": "Los datos enviados no tienen el formato correcto.",
-                "detalles": exc.errors(),
+                "detalles": _detalles_validacion(exc),
             },
         )
 

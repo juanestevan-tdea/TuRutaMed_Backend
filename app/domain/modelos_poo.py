@@ -183,16 +183,15 @@ class ReporteServicio:
         """Comentario dejado por el ciudadano."""
         return self._comentario_ciudadano
 
-    def guardar_reporte(self) -> bool:
-        """Almacena el reporte del usuario en la base de datos de calidad del servicio."""
-        # Corrección: Se añade validación de dominio en lugar de return True quemado
+    def es_valido(self) -> bool:
+        """Valida la calificación y el comentario antes de persistir el reporte.
+
+        La escritura real en MongoDB la realiza la capa de servicio/repositorio;
+        esta entidad de dominio solo aplica las reglas de negocio.
+        """
         if self._calificacion < 1 or self._calificacion > 5:
             return False  # Calificación inválida
-        if not self._comentario_ciudadano.strip():
-            return False  # Comentario vacío
-
-        # Aquí iría la lógica de conexión a la base de datos
-        return True
+        return bool(self._comentario_ciudadano.strip())
 
 
 # ============================================================================
@@ -244,14 +243,15 @@ class RecargaCivica:
         """Método de pago utilizado (PSE, tarjeta, Nequi, etc.)."""
         return self._metodo_de_pago
 
-    def procesar_pago(self) -> bool:
-        """Valida y ejecuta la transacción con la pasarela financiera externa."""
-        # Corrección: Se añade validación de monto negativo o cero
-        if self._monto <= 0:
-            return False  # Transacción rechazada por monto inválido
+    def es_valida(self) -> bool:
+        """Valida los datos mínimos antes de persistir el nuevo saldo.
 
-        # Aquí iría la conexión con la pasarela de pagos (PSE/Tarjeta)
-        return True
+        La pasarela financiera real se integraría en un adaptador externo; esta
+        entidad de dominio no simula una transacción de pago.
+        """
+        if self._monto <= 0:
+            return False
+        return bool(self._metodo_de_pago.strip())
 
 
 # ============================================================================

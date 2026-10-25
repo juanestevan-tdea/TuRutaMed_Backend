@@ -39,7 +39,7 @@ C4Component
 
         Component(mysql_adapter, "MySQL Adapter", "SQLAlchemy", "Persistencia de usuarios, credenciales y roles RBAC.")
         Component(mongo_adapter, "MongoDB Adapter", "PyMongo", "Persistencia de rutas, alertas, reportes y consultas geoespaciales.")
-        Component(gemini_adapter, "Gemini Adapter", "google-genai", "Cliente SDK para Google Gemini 2.5 Flash.")
+        Component(gemini_adapter, "Gemini Adapter", "google-genai", "Cliente SDK para Google Gemini 3.5 Flash-Lite.")
         Component(civica_adapter, "Cívica Adapter", "HTTPS REST", "Cliente para consulta de saldo y recarga Cívica.")
         Component(pagos_adapter, "Pagos Adapter", "HTTPS REST", "Cliente para procesamiento de recargas monetarias.")
 

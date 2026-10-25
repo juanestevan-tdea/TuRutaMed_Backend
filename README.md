@@ -255,7 +255,7 @@ A continuación se presenta la matriz completa de endpoints expuestos por la API
 
 | Método | Endpoint | Descripción | Esquema Body (Entrada) | Nivel de Acceso | Código HTTP Éxito |
 | :---: | :--- | :--- | :--- | :---: | :---: |
-| `POST` | `/ia/asistente-ruta` | Consultas de movilidad y recomendaciones multimodales con Gemini 2.5 Flash. | `ConsultaMovilidadRequest` (`pregunta`: str) | **Público** | `200 OK` |
+| `POST` | `/ia/asistente-ruta` | Consultas de movilidad y recomendaciones multimodales con Gemini 3.5 Flash-Lite. | `ConsultaMovilidadRequest` (`pregunta`: str) | **Público** | `200 OK` |
 
 ---
 

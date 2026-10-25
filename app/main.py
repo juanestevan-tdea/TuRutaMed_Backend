@@ -148,6 +148,9 @@ try:
     _mongo_db = get_mongo_db()
     if _mongo_db is not None:
         seed_rutas_if_empty(_mongo_db)
+        # Índices para las consultas del usuario autenticado (reportes e historial).
+        _mongo_db["reportes"].create_index([("usuario_id", 1), ("fecha_reporte", -1)])
+        _mongo_db["viajes"].create_index([("usuario_id", 1), ("fecha_creacion", -1)])
 except Exception as _e:  # noqa: BLE001
     print(f"[Seeder] No se pudo ejecutar el seeder automatico: {_e}")
 

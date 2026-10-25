@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SaldoCivicaRespuesta(BaseModel):
@@ -19,17 +19,29 @@ class SaldoCivicaRespuesta(BaseModel):
 class RecargaCivicaRequest(BaseModel):
     tarjeta_id: str = Field(
         ...,
+        min_length=1,
+        max_length=32,
         json_schema_extra={"example": "123456"},
     )
     monto: float = Field(
         ...,
-        gt=0,
+        ge=0.01,
+        le=9_999_999_999.99,
         json_schema_extra={"example": 20000.0},
     )
     metodo_de_pago: str = Field(
         ...,
+        min_length=1,
         json_schema_extra={"example": "PSE"},
     )
+
+    @field_validator("metodo_de_pago")
+    @classmethod
+    def _metodo_no_vacio(cls, value: str) -> str:
+        metodo = value.strip()
+        if not metodo:
+            raise ValueError("El método de pago no puede estar vacío")
+        return metodo
 
 
 class RecargaCivicaRespuesta(BaseModel):

@@ -10,13 +10,20 @@ interface Ruta {
   tiempo_estimado_minutos?: number;
   tipo_transporte?: string;
   paraderos?: { nombre_paradero?: string }[];
+  llegada_minutos?: number;
 }
+
+export const claveRuta = (
+  ruta: { _id?: string; id?: string; nombre_ruta?: string },
+  idx = 0,
+): string => ruta._id || ruta.id || ruta.nombre_ruta || `ruta-${idx}`;
 
 interface Props {
   setRutaSeleccionada: (ruta: Ruta | null) => void;
+  llegadas?: Record<string, number>;
 }
 
-export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
+export default function RouteSearchPanel({ setRutaSeleccionada, llegadas = {} }: Props) {
   const [origen, setOrigen] = useState('');
   const [destino, setDestino] = useState('');
   const [resultados, setResultados] = useState<Ruta[]>([]);
@@ -30,24 +37,30 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
     setError('');
     setBuscado(true);
     try {
-      const res = await api.get('/rutas', { params: { limit: 100, skip: 0 } });
+      const res = await api.get('/rutas/', { params: { limit: 100, skip: 0 } });
       const data: Ruta[] = Array.isArray(res.data) ? res.data : [];
       const o = origen.trim().toLowerCase();
       const d = destino.trim().toLowerCase();
-      const filtradas = data.filter((r) => {
-        const haystack = [
-          r.origen,
-          r.destino,
-          ...(r.paraderos || []).map((p: { nombre_paradero?: string }) => p?.nombre_paradero),
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        if (o === '' && d === '') return true;
-        if (o !== '' && d !== '') return haystack.includes(o) || haystack.includes(d);
-        if (o !== '') return haystack.includes(o);
-        return haystack.includes(d);
-      });
+      const filtradas = data
+        .filter((r) => {
+          const haystack = [
+            r.origen,
+            r.destino,
+            ...(r.paraderos || []).map((p: { nombre_paradero?: string }) => p?.nombre_paradero),
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          if (o === '' && d === '') return true;
+          if (o !== '' && d !== '') return haystack.includes(o) || haystack.includes(d);
+          if (o !== '') return haystack.includes(o);
+          return haystack.includes(d);
+        })
+        .map((ruta, idx) => ({
+          ...ruta,
+          llegada_minutos:
+            llegadas[claveRuta(ruta, idx)] ?? Math.floor(Math.random() * 13) + 3,
+        }));
       setResultados(filtradas);
     } catch {
       setError('No se pudieron obtener las rutas.');
@@ -125,6 +138,9 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
             </p>
             <p className="text-sm text-gray-600">
               ⏱ {ruta.tiempo_estimado_minutos ?? 'N/A'} min
+            </p>
+            <p className="text-sm font-semibold text-green-700">
+              🕒 Llega en {ruta.llegada_minutos ?? 3} min
             </p>
             {ruta.tipo_transporte && (
               <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
