@@ -1,3 +1,5 @@
+name: turutamed
+
 networks:
   turutamed-net:
     driver: bridge
@@ -10,13 +12,15 @@ volumes:
 services:
   mysql:
     image: mysql:8.0
-    container_name: turutamed_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_root_password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-turutamed}
       MYSQL_USER: ${MYSQL_USER:-turutamed}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-turutamedpass}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_db_password}
+    ports:
+      # Publicado solo en localhost para permitir ejecutar los tests desde el host.
+      - "127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -30,10 +34,11 @@ services:
 
   mongo:
     image: mongo:7.0
-    container_name: turutamed_mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-turutamed_db}
+    ports:
+      - "127.0.0.1:${MONGO_HOST_PORT:-27017}:27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -47,9 +52,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: turutamed_redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -65,27 +71,30 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: turutamed_backend
     restart: unless-stopped
+    init: true
     ports:
       - "8000:8000"
     environment:
-      MYSQL_URL: mysql+pymysql://${MYSQL_USER:-turutamed}:${MYSQL_PASSWORD:-turutamedpass}@mysql:3306/${MYSQL_DATABASE:-turutamed}
+      MYSQL_URL: mysql+pymysql://${MYSQL_USER:-turutamed}:${MYSQL_PASSWORD:-change_me_db_password}@mysql:3306/${MYSQL_DATABASE:-turutamed}
       MONGO_URI: mongodb://mongo:27017/?serverSelectionTimeoutMS=5000
       MONGO_DB_NAME: ${MONGO_DB_NAME:-turutamed_db}
-      REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY:-change_me}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-    volumes:
-      - .:/app
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-change_me_jwt_secret_at_least_32_characters_long}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-30}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-change_me_gemini_api_key}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
     networks:
       - turutamed-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
     depends_on:
       mysql:
         condition: service_healthy
@@ -98,14 +107,21 @@ services:
     build:
       context: ./TuRutaMed_Frontend
       dockerfile: Dockerfile
-    container_name: turutamed_frontend
+      args:
+        # /api/v1 es relativo al frontend y Nginx lo proxya a http://backend:8000.
+        # Para exponer la API directamente, usar http://localhost:8000.
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    volumes:
-      - ./TuRutaMed_Frontend:/app
-      - /app/node_modules
+      - "5173:80"
     networks:
       - turutamed-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

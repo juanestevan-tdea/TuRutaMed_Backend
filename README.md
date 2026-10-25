@@ -1,8 +1,131 @@
 [![CI](https://github.com/juanestevan-tdea/TuRutaMed_Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/juanestevan-tdea/TuRutaMed_Backend/actions/workflows/ci.yml)
 
-# 🚍 TuRutaMed Backend API
+# 🚍 TuRutaMed — Stack completo (Backend + Frontend)
 
-> Sistema integral y plataforma backend de alta disponibilidad para la gestión inteligente del transporte público multimodal, geolocalización geoespacial de paraderos y reportes viales comunitarios en tiempo real en el **Valle de Aburrá (Medellín, Antioquia)**.
+> Sistema integral de alta disponibilidad para la gestión inteligente del transporte público multimodal, geolocalización geoespacial de paraderos y reportes viales comunitarios en tiempo real en el **Valle de Aburrá (Medellín, Antioquia)**. Incluye API FastAPI, frontend React/Vite y persistencia poliglota MySQL + MongoDB + Redis.
+
+---
+
+## 🚀 INICIO RÁPIDO — STACK COMPLETO EN 5 PASOS
+
+Este repositorio levanta **FastAPI + React/Vite + MySQL + MongoDB + Redis** con un solo comando de Docker Compose. El frontend se sirve con Nginx y expone la API en el mismo origen mediante el proxy `/api/v1`, que apunta al contenedor `backend`.
+
+### Paso 1 — Clonar el repositorio y verificar Docker
+
+Requisitos: Docker Desktop 4+ con Docker Compose v2 y Git.
+
+```bash
+git clone https://github.com/juanestevan-tdea/TuRutaMed_Backend.git
+cd TuRutaMed_Backend
+
+docker --version
+docker compose version
+```
+
+### Paso 2 — Crear los archivos `.env` desde las plantillas
+
+Los `.env.example` no contienen credenciales reales.
+
+**Linux / macOS:**
+
+```bash
+cp .env.example .env
+cp TuRutaMed_Frontend/.env.example TuRutaMed_Frontend/.env
+```
+
+**Windows PowerShell:**
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item TuRutaMed_Frontend/.env.example TuRutaMed_Frontend/.env
+```
+
+> `TuRutaMed_Frontend/.env` solo se usa para desarrollo local con `npm run dev`. En Docker, `VITE_API_URL` se inyecta como build-arg y queda compilada en el bundle.
+
+### Paso 3 — Configurar las variables obligatorias
+
+Edita el `.env` de la raíz y reemplaza los valores `change_me_*`:
+
+- `SECRET_KEY`: mínimo 32 caracteres.
+- `MYSQL_ROOT_PASSWORD` y `MYSQL_PASSWORD`: contraseñas de la base de datos.
+- `GEMINI_API_KEY`: clave real de Google AI Studio para el asistente.
+- `VITE_API_URL=/api/v1`: valor correcto para Docker. Nginx recibe `/api/v1/*` en el frontend y lo envía a `http://backend:8000`.
+- Si los puertos `3306`, `27017`, `6379` u `8000` están ocupados, cambia `MYSQL_HOST_PORT`, `MONGO_HOST_PORT`, `REDIS_HOST_PORT` o el mapeo de `backend`. Si cambias los puertos de MySQL/MongoDB/Redis, actualiza también `MYSQL_URL`, `MONGO_URI` y `REDIS_URL` para que los tests locales apunten a los nuevos puertos.
+
+### Paso 4 — Levantar todo el stack
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Espera a que todos los servicios estén `healthy`. La primera vez puede tardar unos minutos porque descarga imágenes y compila el frontend.
+
+| Servicio | URL / Acceso |
+| :--- | :--- |
+| Frontend React | [http://localhost:5173](http://localhost:5173) |
+| Swagger UI (FastAPI) | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| Healthcheck backend | [http://localhost:8000/health/live](http://localhost:8000/health/live) |
+| MySQL | `localhost:3306` (solo loopback) |
+| MongoDB | `localhost:27017` (solo loopback) |
+| Redis | `localhost:6379` (solo loopback) |
+
+Para ver logs:
+
+```bash
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+### Paso 5 — Ejecutar los tests
+
+Con el stack levantado (los puertos de MySQL, MongoDB y Redis quedan publicados en `localhost`):
+
+**Backend:**
+
+```bash
+# Linux / macOS
+python3 -m venv venv
+source venv/bin/activate
+
+# Windows PowerShell
+# python -m venv venv
+# .\venv\Scripts\Activate.ps1
+
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+Con cobertura:
+
+```bash
+pytest --cov=app --cov-report=term-missing --cov-fail-under=60
+```
+
+**Frontend:**
+
+```bash
+cd TuRutaMed_Frontend
+npm ci
+npm run lint
+npm run build
+```
+
+**Detener el stack:**
+
+```bash
+docker compose down
+```
+
+Para borrar también los volúmenes de datos (reset total):
+
+```bash
+docker compose down -v
+```
+
+> **Modo desarrollo opcional:** para hot-reload de Vite y Uvicorn usa
+> `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build`.
+> El comando principal de entrega sigue siendo `docker compose up --build`.
 
 ---
 
@@ -355,15 +478,17 @@ Captura caídas del servicio MySQL, inconsistencias de clave foránea o problema
 
 ---
 
-## 9. GUÍA DE EJECUCIÓN LOCAL
+## 9. GUÍA DE EJECUCIÓN LOCAL SIN DOCKER (ALTERNATIVA)
 
-Sigue atentamente este manual paso a paso para desplegar y ejecutar el backend de TuRutaMed en tu entorno local de desarrollo.
+> Para la entrega final usa la **Guía rápida de 5 pasos** del inicio. Esta sección es solo para ejecutar el backend y el frontend directamente en el host, sin contenedores.
 
 ### 9.1 Requisitos Previos
 
-- **Python:** Versión `3.10` o superior instalada.
+- **Python:** Versión `3.11` o superior instalada.
+- **Node.js:** Versión `20` o superior.
 - **MySQL Server:** Instancia local de MySQL 8.0 activa (puerto por defecto `3306`).
-- **Cluster MongoDB Atlas:** Cuenta activa con una base de datos documental y credenciales válidas (o MongoDB Community local).
+- **MongoDB:** Instancia local activa en el puerto `27017` (o una cadena de MongoDB Atlas).
+- **Redis:** Instancia local activa en el puerto `6379`.
 - **Git:** Herramienta de control de versiones.
 
 ---
@@ -373,7 +498,7 @@ Sigue atentamente este manual paso a paso para desplegar y ejecutar el backend d
 Abre una terminal y clona el proyecto en tu máquina local:
 
 ```bash
-git clone https://github.com/tu-usuario-o-organizacion/TuRutaMed_Backend.git
+git clone https://github.com/juanestevan-tdea/TuRutaMed_Backend.git
 cd TuRutaMed_Backend
 ```
 
@@ -421,34 +546,27 @@ pip install -r requirements.txt
 
 ### 9.5 Paso 4: Configuración de Variables de Entorno (`.env`)
 
-Crea un archivo llamado `.env` en la raíz del proyecto (junto a `requirements.txt`) con la siguiente plantilla de configuración:
+Copia la plantilla y reemplaza los valores `change_me_*`:
 
-```env
-# ==========================================
-# CONFIGURACIÓN DE BASE DE DATOS MySQL (Local)
-# ==========================================
-# Formato: mysql+pymysql://<usuario>:<password>@<host>:<puerto>/<nombre_db>
-MYSQL_URL=mysql+pymysql://root:tu_password_mysql@localhost:3306/turutamed_db
-
-# ==========================================
-# CONFIGURACIÓN DE BASE DE DATOS MongoDB (Atlas Nube)
-# ==========================================
-# Connection String provisto por MongoDB Atlas
-MONGO_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
-MONGO_DB_NAME=turutamed_db
-
-# ==========================================
-# CONFIGURACIÓN DE SEGURIDAD (Tokens JWT)
-# ==========================================
-# Clave privada para la firma criptográfica de los tokens
-SECRET_KEY=TuRutaMed_Super_Firma_Secreta_Medellin_2026
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
+```bash
+cp .env.example .env
 ```
 
-> ⚠️ **IMPORTANTE:** Antes de levantar la API, asegúrate de que la base de datos `turutamed_db` existe en tu servidor MySQL:
+Variables principales para ejecución local:
+
+```env
+MYSQL_URL=mysql+pymysql://turutamed:change_me_db_password@localhost:3306/turutamed
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB_NAME=turutamed_db
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=change_me_jwt_secret_at_least_32_characters_long
+GEMINI_API_KEY=change_me_google_gemini_api_key
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+> ⚠️ **IMPORTANTE:** La base de datos configurada en `MYSQL_DATABASE` debe existir en tu servidor MySQL:
 > ```sql
-> CREATE DATABASE IF NOT EXISTS turutamed_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+> CREATE DATABASE IF NOT EXISTS turutamed CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 > ```
 > Las tablas e índices espaciales se generarán automáticamente en el primer arranque de la aplicación gracias a SQLAlchemy y PyMongo.
 

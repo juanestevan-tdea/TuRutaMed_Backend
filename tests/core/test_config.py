@@ -32,3 +32,23 @@ def test_cors_origins_csv_parsing():
         "http://localhost:5173",
         "http://localhost:3000",
     ]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "http://localhost:5173,http://localhost:3000",
+            ["http://localhost:5173", "http://localhost:3000"],
+        ),
+        (
+            '["http://localhost:5173", "http://localhost:5174"]',
+            ["http://localhost:5173", "http://localhost:5174"],
+        ),
+    ],
+)
+def test_cors_origins_from_environment(monkeypatch, raw, expected):
+    """docker-compose usa CSV; los .env locales pueden usar JSON."""
+    monkeypatch.setenv("CORS_ORIGINS", raw)
+    settings = Settings(_env_file=None, **REQUIRED)
+    assert settings.cors_origins == expected

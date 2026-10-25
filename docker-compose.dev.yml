@@ -1,0 +1,32 @@
+# Overlay opcional para desarrollo con hot-reload de Vite y Uvicorn.
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# El comando principal (docker compose up --build) usa el frontend de
+# produccion con Nginx y no carga este archivo automaticamente.
+services:
+  backend:
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      - .:/app
+
+  frontend:
+    build:
+      context: ./TuRutaMed_Frontend
+      dockerfile: Dockerfile.dev
+    command:
+      ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    environment:
+      VITE_API_URL: ${VITE_API_URL_LOCAL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./TuRutaMed_Frontend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

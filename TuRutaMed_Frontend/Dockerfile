@@ -1,4 +1,6 @@
-FROM node:20-alpine
+# Dockerfile de produccion para TuRutaMed Frontend (Vite + React)
+# Etapa 1: compilar el bundle con la URL de API inyectada en build-time.
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -7,6 +9,22 @@ RUN npm ci
 
 COPY . .
 
-EXPOSE 5173
+# La URL se hornea en el bundle porque Vite resuelve import.meta.env en build.
+# En Docker se usa /api/v1 y Nginx lo proxya al contenedor backend.
+ARG VITE_API_URL=/api/v1
+ENV VITE_API_URL=$VITE_API_URL
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+RUN npm run build
+
+# Etapa 2: servir estaticos con Nginx y proxy inverso hacia FastAPI.
+FROM nginx:1.27-alpine AS runtime
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

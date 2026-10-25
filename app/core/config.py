@@ -1,11 +1,12 @@
 """Configuración centralizada del backend TuRutaMed usando pydantic-settings."""
 
+import json
 from functools import lru_cache
 from typing import Annotated, Literal
 
 from fastapi import Depends
 from pydantic import AliasChoices, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -74,7 +75,10 @@ class Settings(BaseSettings):
     )
 
     # CORS
-    cors_origins: list[str] = Field(
+    # NoDecode evita que pydantic-settings intente interpretar el valor de
+    # entorno como JSON antes de ejecutar el validador. Así aceptamos tanto
+    # la lista JSON como el formato CSV usado por docker-compose.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:5173", "http://127.0.0.1:5173"],
         validation_alias=AliasChoices("CORS_ORIGINS", "ALLOWED_ORIGINS"),
     )
@@ -89,6 +93,15 @@ class Settings(BaseSettings):
     @classmethod
     def _parse_cors_origins(cls, value):
         if isinstance(value, str):
+            value = value.strip()
+            if value.startswith("["):
+                try:
+                    parsed = json.loads(value)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("CORS_ORIGINS debe ser una lista JSON o CSV") from exc
+                if not isinstance(parsed, list):
+                    raise ValueError("CORS_ORIGINS debe ser una lista JSON o CSV")
+                return [str(item).strip() for item in parsed if str(item).strip()]
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
