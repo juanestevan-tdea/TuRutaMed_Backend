@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -21,12 +23,22 @@ from app.routers.reportes_router import router as reportes_router
 from app.routers.viajes_router import router as viajes_router
 from app.services.cache_service import get_redis_client
 
+logger = logging.getLogger(__name__)
+
 configure_logging()
 
 settings = get_settings()
 
-# Inicializar tablas en MySQL
-Base.metadata.create_all(bind=engine)
+# Inicializar tablas en MySQL.
+# No debe bloquear el arranque: si MySQL está caído, /health/live debe seguir respondiendo.
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as exc:  # noqa: BLE001
+    logger.warning(
+        "No se pudieron inicializar las tablas de MySQL; la API arrancará en modo "
+        "degradado y los endpoints que usan MySQL fallarán: %s",
+        exc,
+    )
 
 # Instancia de la aplicación FastAPI
 app = FastAPI(
@@ -92,9 +104,17 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 
 
 # MIDDLEWARE CORS
+# Vite puede abrirse como localhost o como 127.0.0.1: ambos orígenes deben
+# funcionar siempre, además de los configurados en CORS_ORIGINS.
+CORS_ORIGINS_LOCALES = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+)
+cors_origins = list(dict.fromkeys([*settings.cors_origins, *CORS_ORIGINS_LOCALES]))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -121,7 +141,9 @@ for _r in (
 ):
     app.include_router(_r, prefix="/api/v1")
 
-# Seeder automático al iniciar si la colección está vacía (solo si Mongo está disponible)
+# Seeder automático al iniciar: sincroniza (upsert) el catálogo SITVA y asegura
+# el índice 2dsphere. No borra rutas personalizadas; para un reset total:
+#   python -m app.database_seeder --force
 try:
     _mongo_db = get_mongo_db()
     if _mongo_db is not None:
@@ -172,8 +194,11 @@ def leer_raiz():
 @app.get("/estado-roles", tags=["Pruebas"])
 def probar_roles():
     return {
-        "roles_soportados": ["Usuario_Regular", "Pasajero_Multimodal", "Administrador_Sistema"],
-        "seguridad": "JWT Auth activo con RBAC",
+        "roles_soportados": ["Usuario", "Pasajero", "Administrador_Sistema"],
+        "roles_registro": ["Usuario", "Pasajero"],
+        "seguridad": (
+            "JWT Auth activo con RBAC; el registro público no permite roles administrativos"
+        ),
     }
 
 

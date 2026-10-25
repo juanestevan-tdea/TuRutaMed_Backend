@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     app_name: str = "TuRutaMed API"
     app_version: str = "2.5.0"
     environment: Literal["dev", "staging", "prod"] = "dev"
-    debug: bool = False
+    debug: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("APP_DEBUG", "DEBUG_MODE"),
+    )
 
     # Bases de datos
     mysql_url: str = Field(
@@ -72,7 +75,7 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: list[str] = Field(
-        default=["http://localhost:5173"],
+        default=["http://localhost:5173", "http://127.0.0.1:5173"],
         validation_alias=AliasChoices("CORS_ORIGINS", "ALLOWED_ORIGINS"),
     )
 

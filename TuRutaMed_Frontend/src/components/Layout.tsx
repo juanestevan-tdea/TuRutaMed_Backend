@@ -7,28 +7,27 @@ export default function Layout() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    localStorage.removeItem('access_token');
     localStorage.removeItem('token');
-    navigate('/');
+    localStorage.removeItem('refresh_token');
+    navigate('/login');
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-white shadow-md h-16 flex items-center px-6">
         <div className="flex items-center justify-between w-full">
-          <NavLink to="/home" className="text-xl font-bold text-blue-600 whitespace-nowrap">
+          <NavLink to="/" className="text-xl font-bold text-blue-600 whitespace-nowrap">
             TuRutaMed
           </NavLink>
           <div className="flex items-center gap-6 whitespace-nowrap">
-            <NavLink to="/home" className={linkClass + " whitespace-nowrap"}>
+            <NavLink to="/" className={linkClass}>
               Mapa
             </NavLink>
-            <NavLink to="/home" className={linkClass + " whitespace-nowrap"}>
-              Rutas
-            </NavLink>
-            <NavLink to="/civica" className={linkClass + " whitespace-nowrap"}>
+            <NavLink to="/civica" className={linkClass}>
               Mi Tarjeta
             </NavLink>
-            <NavLink to="/asistente" className={linkClass + " whitespace-nowrap"}>
+            <NavLink to="/asistente" className={linkClass}>
               Asistente IA
             </NavLink>
             <button

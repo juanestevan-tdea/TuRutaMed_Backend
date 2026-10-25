@@ -9,11 +9,13 @@ del Metro, Metrocable, Tranvía y buses integrados de Medellín, incluyendo
 marcas de accesibilidad (RF-09).
 
 Ejecución:
-    python -m app.database_seeder
-o se invoca automáticamente desde main.py si la colección está vacía.
+    python -m app.database_seeder              # upsert del catálogo SITVA
+    python -m app.database_seeder --force      # borra rutas actuales y deja solo el catálogo
+También se invoca automáticamente desde main.py en modo upsert.
 ==============================================================================
 """
 
+import argparse
 from typing import Any
 
 from app.database import get_mongo_db
@@ -197,27 +199,152 @@ SITVA_ROUTES: list[dict[str, Any]] = [
 ]
 
 
-def seed_rutas_if_empty(db) -> int:
+def _normalizar_coordenadas(valor: Any, contexto: str) -> list[float]:
+    """Valida y normaliza un punto GeoJSON en orden [longitud, latitud]."""
+    if not isinstance(valor, (list, tuple)) or len(valor) != 2:
+        raise ValueError(f"{contexto}: 'coordenadas' debe ser [longitud, latitud].")
+    try:
+        longitud, latitud = float(valor[0]), float(valor[1])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{contexto}: las coordenadas deben ser numéricas.") from exc
+    if not -180.0 <= longitud <= 180.0:
+        raise ValueError(f"{contexto}: longitud fuera de rango ({longitud}).")
+    if not -90.0 <= latitud <= 90.0:
+        raise ValueError(f"{contexto}: latitud fuera de rango ({latitud}).")
+    return [longitud, latitud]
+
+
+def _normalizar_paradero(paradero: dict[str, Any], indice: int, nombre_ruta: str) -> dict[str, Any]:
+    """Deja cada paradero con un único esquema: coordenadas GeoJSON + orden."""
+    contexto = f"ruta '{nombre_ruta}', paradero #{indice}"
+    if not isinstance(paradero, dict):
+        raise ValueError(f"{contexto}: el paradero debe ser un objeto.")
+
+    normalizado = dict(paradero)
+    if "coordenadas" in normalizado:
+        coordenadas = normalizado["coordenadas"]
+    elif "longitud" in normalizado and "latitud" in normalizado:
+        # Migración del esquema viejo: latitud/longitud -> coordenadas.
+        coordenadas = [normalizado["longitud"], normalizado["latitud"]]
+    else:
+        raise ValueError(f"{contexto}: falta 'coordenadas' (o 'longitud' y 'latitud').")
+
+    normalizado.pop("latitud", None)
+    normalizado.pop("longitud", None)
+    normalizado["coordenadas"] = _normalizar_coordenadas(coordenadas, contexto)
+
+    try:
+        normalizado["orden"] = int(normalizado.get("orden", indice))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{contexto}: 'orden' debe ser un entero.") from exc
+    return normalizado
+
+
+def _normalizar_ruta(ruta: dict[str, Any]) -> dict[str, Any]:
+    """Normaliza una ruta completa al esquema que espera el índice 2dsphere."""
+    if not isinstance(ruta, dict):
+        raise ValueError("Cada ruta del catálogo debe ser un objeto.")
+
+    normalizada = dict(ruta)
+    nombre = str(normalizada.get("nombre_ruta", "")).strip()
+    if not nombre:
+        raise ValueError("La ruta no tiene 'nombre_ruta'.")
+    normalizada["nombre_ruta"] = nombre
+
+    paraderos = normalizada.get("paraderos") or []
+    if not isinstance(paraderos, list) or not paraderos:
+        raise ValueError(f"La ruta '{nombre}' no tiene paraderos.")
+    normalizada["paraderos"] = [
+        _normalizar_paradero(paradero, indice, nombre)
+        for indice, paradero in enumerate(paraderos, start=1)
+    ]
+
+    if "coordenadas" in normalizada:
+        normalizada["coordenadas"] = _normalizar_coordenadas(
+            normalizada["coordenadas"], f"ruta '{nombre}'"
+        )
+    else:
+        normalizada["coordenadas"] = normalizada["paraderos"][0]["coordenadas"]
+    normalizada.pop("latitud", None)
+    normalizada.pop("longitud", None)
+    return normalizada
+
+
+def _validar_catalogo(rutas: list[dict[str, Any]]) -> None:
+    """Falla rápido si el catálogo está vacío o tiene nombres repetidos."""
+    if not rutas:
+        raise ValueError("El catálogo SITVA está vacío.")
+    nombres = [ruta["nombre_ruta"] for ruta in rutas]
+    duplicados = sorted({nombre for nombre in nombres if nombres.count(nombre) > 1})
+    if duplicados:
+        raise ValueError(f"El catálogo SITVA contiene rutas duplicadas: {duplicados}")
+
+
+def _asegurar_indice_geoespacial(collection: Any) -> None:
+    """Crea el índice 2dsphere sobre paraderos.coordenadas (idempotente)."""
+    collection.create_index(
+        [("paraderos.coordenadas", "2dsphere")],
+        name="paraderos.coordenadas_2dsphere",
+    )
+
+
+def seed_rutas_if_empty(db: Any, force: bool = False) -> int:
     """
-    Puebla la colección `rutas` si está vacía.
-    Retorna el número de documentos insertados.
+    Sincroniza el catálogo SITVA en la colección `rutas`.
+
+    - force=False: hace upsert de las rutas del catálogo por `nombre_ruta`.
+      No borra rutas personalizadas que no estén en el catálogo.
+    - force=True: elimina todas las rutas actuales y deja únicamente el catálogo
+      SITVA. Es la opción para reemplazar datos viejos o con esquemas mezclados.
+
+    Retorna el número de rutas del catálogo sincronizadas.
     """
+    if db is None:
+        raise RuntimeError("MongoDB no está disponible; no se puede sembrar el catálogo SITVA.")
+
+    rutas = [_normalizar_ruta(ruta) for ruta in SITVA_ROUTES]
+    _validar_catalogo(rutas)
+
     collection = db["rutas"]
-    if collection.count_documents({}) > 0:
-        print("[Seeder] La colección 'rutas' ya contiene datos. Se omite el seeding.")
-        return 0
 
-    result = collection.insert_many(SITVA_ROUTES)
-    inserted = len(result.inserted_ids)
-    print(f"[Seeder] Se insertaron {inserted} rutas del SITVA en MongoDB.")
-    return inserted
+    if force:
+        eliminadas = collection.delete_many({}).deleted_count
+        print(f"[Seeder] Se eliminaron {eliminadas} rutas existentes de 'rutas'.")
+
+    # El índice debe existir antes de consultar con $near.
+    _asegurar_indice_geoespacial(collection)
+
+    for ruta in rutas:
+        collection.replace_one({"nombre_ruta": ruta["nombre_ruta"]}, ruta, upsert=True)
+
+    total = collection.count_documents({})
+    print(
+        f"[Seeder] Catálogo SITVA sincronizado: {len(rutas)} rutas. "
+        f"Total en la colección 'rutas': {total}."
+    )
+    return len(rutas)
 
 
-def run_seeder():
+def run_seeder(force: bool = False) -> int:
     """Ejecuta el seeder de forma independiente."""
     db = get_mongo_db()
-    seed_rutas_if_empty(db)
+    if db is None:
+        raise RuntimeError("No se pudo conectar a MongoDB. Revisa MONGO_URL.")
+    return seed_rutas_if_empty(db, force=force)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Sincroniza el catálogo de rutas del SITVA en MongoDB."
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Borra las rutas actuales y deja únicamente el catálogo SITVA.",
+    )
+    args = parser.parse_args()
+    run_seeder(force=args.force)
 
 
 if __name__ == "__main__":
-    run_seeder()
+    main()

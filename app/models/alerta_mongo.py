@@ -1,6 +1,9 @@
+import logging
 from datetime import UTC, datetime
 
 from app.database import mongo_db
+
+logger = logging.getLogger(__name__)
 
 coleccion_alertas = mongo_db["alertas"] if mongo_db is not None else None
 
@@ -9,7 +12,7 @@ if coleccion_alertas is not None:
     try:
         coleccion_alertas.create_index([("coordenadas", "2dsphere")])
     except Exception as e:  # noqa: BLE001
-        print(f"⚠️ No se pudo inicializar el índice 2dsphere en alertas: {e}")
+        logger.warning("No se pudo inicializar el índice 2dsphere en alertas: %s", e)
 
 
 def insertar_alerta_db(alerta_data: dict):

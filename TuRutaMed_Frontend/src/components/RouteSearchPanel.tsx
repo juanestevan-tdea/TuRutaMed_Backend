@@ -106,7 +106,10 @@ export default function RouteSearchPanel({ setRutaSeleccionada }: Props) {
       <div className="mt-4 max-h-64 overflow-y-auto space-y-2">
         {loading && <p className="text-sm text-gray-500">Buscando...</p>}
         {!loading && buscado && resultados.length === 0 && (
-          <p className="text-sm text-gray-400">No se encontraron rutas para esta búsqueda. Intenta con otros términos.</p>
+          <div className="flex flex-col items-center text-gray-400 py-4">
+            <span className="text-3xl mb-2">🚌</span>
+            <p className="text-sm">No se encontraron rutas cercanas.</p>
+          </div>
         )}
         {!buscado && !loading && (
           <p className="text-sm text-gray-400">Sin resultados aún.</p>

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
@@ -8,6 +10,8 @@ from app.services.gemini_service import (
     consultar_asistente_rutas,
     optimizar_itinerario_multimodal,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ia", tags=["Inteligencia Artificial - Asistente TuRutaMed"])
 
@@ -42,7 +46,7 @@ def consultar_asistente_transporte(request: Request, body: ConsultaMovilidadRequ
             "respuesta": respuesta,
         }
     except Exception as e:  # noqa: BLE001
-        print(f"Error real de la IA: {e}")
+        logger.warning("Fallo en servicio de IA, activando fallback: %s", e)
         return {
             "estado": "fallback",
             "asistente": "TuRutaMed AI",

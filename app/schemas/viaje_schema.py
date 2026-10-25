@@ -2,9 +2,19 @@ from pydantic import BaseModel, Field
 
 
 class DuracionViajeRequest(BaseModel):
-    origen: str = Field(..., example="Poblado")
-    destino: str = Field(..., example="Niquía")
-    duracion_minutos: int = Field(..., gt=0, example=35)
+    origen: str = Field(
+        ...,
+        json_schema_extra={"example": "Poblado"},
+    )
+    destino: str = Field(
+        ...,
+        json_schema_extra={"example": "Niquía"},
+    )
+    duracion_minutos: int = Field(
+        ...,
+        gt=0,
+        json_schema_extra={"example": 35},
+    )
 
 
 class DuracionViajeRespuesta(BaseModel):
@@ -16,7 +26,8 @@ class DuracionViajeRespuesta(BaseModel):
 
 class ViajeMultimodalRequest(BaseModel):
     secuencia_rutas: list[str] = Field(
-        ..., example=["Metro Línea A", "Metrocable Línea K", "Bus Alimentador"]
+        ...,
+        json_schema_extra={"example": ["Metro Línea A", "Metrocable Línea K", "Bus Alimentador"]},
     )
 
 

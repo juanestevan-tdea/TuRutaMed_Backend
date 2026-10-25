@@ -1,6 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
+import { getApiErrorMessage } from './errors';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 const client = axios.create({
   baseURL: API_URL,
@@ -100,6 +102,8 @@ client.interceptors.response.use(
       }
     }
 
+    const detail = getApiErrorMessage(error, 'Ocurrió un error inesperado.');
+    toast.error(detail);
     return Promise.reject(error);
   }
 );

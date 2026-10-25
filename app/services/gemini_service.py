@@ -10,12 +10,16 @@ Dependencia: google-genai
 ==============================================================================
 """
 
+import logging
+
 from fastapi import HTTPException
 from google import genai
 from google.genai import types
 
 from app.core.config import get_settings
 from app.core.exceptions import DomainException
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -55,11 +59,11 @@ def obtener_modelo_disponible() -> str:
             if nombre and "generateContent" in (metodos or []):
                 # El nombre puede venir como 'models/gemini-...' o solo el id
                 nombre_limpio = nombre.split("/")[-1] if "/" in nombre else nombre
-                print(f"Usando modelo: {nombre_limpio}")
+                logger.info("Usando modelo Gemini: %s", nombre_limpio)
                 return nombre_limpio
     except Exception as e:  # noqa: BLE001
-        print(f"[IA] No se pudo listar modelos disponibles: {e}")
-    print(f"Usando modelo de respaldo: {fallback}")
+        logger.warning("[IA] No se pudo listar modelos disponibles: %s", e)
+    logger.info("Usando modelo de respaldo: %s", fallback)
     return fallback
 
 
@@ -94,14 +98,14 @@ def consultar_asistente_rutas(prompt_usuario: str, modelo: str | None = None) ->
                     max_output_tokens=1024,
                 ),
             )
-            print(f"[IA] Respuesta generada con el modelo: {modelo_actual}")
+            logger.info("[IA] Respuesta generada con el modelo: %s", modelo_actual)
             return str(response.text)
         except Exception as e:  # noqa: BLE001
             ultimo_error = e
-            print(f"[IA] Fallo con el modelo {modelo_actual}: {e}")
+            logger.warning("[IA] Fallo con el modelo %s: %s", modelo_actual, e)
             continue
 
-    print("[IA] Todos los modelos fallaron.")
+    logger.error("[IA] Todos los modelos de Gemini fallaron.")
     raise DomainException(
         message="El servicio de IA no se encuentra disponible temporalmente.",
         code="AI_SERVICE_UNAVAILABLE",

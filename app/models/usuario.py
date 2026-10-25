@@ -12,8 +12,9 @@ class Usuario(Base):
     email = Column(String(100), unique=True, index=True, nullable=False)
     contrasena_encriptada = Column(String(255), nullable=False)
 
-    # Aquí controlamos los Roles (RBAC)
-    rol = Column(String(50), default="Usuario_Regular")
+    # Aquí controlamos los Roles (RBAC). El registro público siempre crea
+    # usuarios no privilegiados; un admin solo se asigna fuera de ese flujo.
+    rol = Column(String(50), default="Usuario")
 
     # Para saber si la cuenta está activa o baneada
     activo = Column(Boolean, default=True)

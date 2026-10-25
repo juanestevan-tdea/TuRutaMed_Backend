@@ -459,26 +459,39 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 Inicia el servidor de desarrollo con recarga automática en caliente (*hot-reload*):
 
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
 Si el servidor arranca satisfactoriamente, observarás en la consola los mensajes de confirmación de conexión:
 ```text
 INFO:     Will watch for changes in: ['...']
 ✅ Conexión preparada para MySQL local
-✅ Conexión exitosa a MongoDB Atlas (Base de datos: turutamed_db)
+✅ Conexión exitosa a MongoDB (Base de datos: turutamed_db)
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ```
 
 ---
 
-### 9.7 Paso 6: Verificación y Documentación Interactiva
+### 9.7 Paso 6: Ejecución del Frontend (React + Vite + Tailwind)
+
+Para ejecutar la aplicación cliente:
+
+```bash
+cd TuRutaMed_Frontend && npm run dev
+```
+
+La interfaz web quedará disponible en [http://localhost:5173](http://localhost:5173).
+
+---
+
+### 9.8 Paso 7: Verificación y Documentación Interactiva
 
 Abre tu navegador web de preferencia para interactuar con la plataforma:
 
+- **Frontend TuRutaMed:** [http://localhost:5173](http://localhost:5173)
 - **Swagger UI Interactivo:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **Documentación ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **Endpoint Healthcheck (Raíz):** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Endpoint Healthcheck:** [http://127.0.0.1:8000/health/live](http://127.0.0.1:8000/health/live)
 
 ---
 

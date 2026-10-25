@@ -1,72 +1,111 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { isAxiosError } from 'axios';
 import api from '../services/api';
-import { AxiosError } from 'axios';
+import { getApiErrorMessage } from '../api/errors';
+
+interface SaldoResponse {
+  tarjeta_id: string;
+  saldo: number;
+}
+
+interface RecargaResponse {
+  saldo_nuevo: number;
+  mensaje?: string;
+}
 
 export default function Civica() {
-  const [tarjetaId, setTarjetaId] = useState<string>('123456');
+  const [tarjetaId, setTarjetaId] = useState<string>('');
   const [saldo, setSaldo] = useState<number | null>(null);
   const [monto, setMonto] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [loadingSaldo, setLoadingSaldo] = useState(false);
+  const [loadingRecarga, setLoadingRecarga] = useState(false);
   const [error, setError] = useState<string>('');
   const [mensaje, setMensaje] = useState<string>('');
 
   const consultarSaldo = async () => {
-    if (!tarjetaId.trim()) {
+    const id = tarjetaId.trim();
+
+    if (!id) {
       setError('Ingresa un número de tarjeta.');
+      setSaldo(null);
       return;
     }
-    setLoading(true);
+
+    setLoadingSaldo(true);
     setError('');
     setMensaje('');
+
     try {
-      const res = await api.get(`/civica/saldo/${encodeURIComponent(tarjetaId.trim())}`);
-      setSaldo(res.data?.saldo ?? 0);
-      setMensaje('Saldo actualizado.');
+      const res = await api.get<SaldoResponse>(`/civica/saldo/${encodeURIComponent(id)}`);
+      const saldoRecibido = Number(res.data?.saldo);
+
+      if (!Number.isFinite(saldoRecibido)) {
+        throw new Error('El servidor devolvió un saldo inválido.');
+      }
+
+      setSaldo(saldoRecibido);
+      setMensaje('Saldo consultado.');
     } catch (err) {
-      const e = err as AxiosError<{ detail?: string }>;
-      setError(e.response?.data?.detail || 'No se pudo conectar con el servidor.');
       setSaldo(null);
+      setError(getApiErrorMessage(err, 'No se pudo consultar el saldo.'));
     } finally {
-      setLoading(false);
+      setLoadingSaldo(false);
     }
   };
 
   const recargar = async () => {
-    if (!tarjetaId.trim() || !monto) {
+    const id = tarjetaId.trim();
+    const montoNumero = Number(monto);
+
+    if (!id || !monto) {
       setError('Completa tarjeta y monto.');
       return;
     }
-    setLoading(true);
+
+    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
+      setError('Ingresa un monto válido mayor a cero.');
+      return;
+    }
+
+    setLoadingRecarga(true);
     setError('');
     setMensaje('');
+
     try {
-      const res = await api.post('/civica/recargar', {
-        tarjeta_id: tarjetaId.trim(),
-        monto: parseFloat(monto),
+      const res = await api.post<RecargaResponse>('/civica/recargar', {
+        tarjeta_id: id,
+        monto: montoNumero,
         metodo_de_pago: 'PSE',
       });
-      setSaldo(res.data?.saldo_nuevo ?? saldo);
+      const saldoNuevo = Number(res.data?.saldo_nuevo);
+
+      if (!Number.isFinite(saldoNuevo)) {
+        throw new Error('El servidor devolvió un saldo inválido.');
+      }
+
+      setSaldo(saldoNuevo);
       setMensaje(res.data?.mensaje || 'Recarga exitosa.');
       setMonto('');
     } catch (err) {
-      const e = err as AxiosError<{ detail?: string }>;
-      const status = e.response?.status;
-      if (status === 401) {
+      if (isAxiosError(err) && err.response?.status === 401) {
         setError('Debes iniciar sesión para recargar.');
       } else {
-        setError(e.response?.data?.detail || 'No se pudo conectar con el servidor.');
+        setError(getApiErrorMessage(err, 'No se pudo procesar la recarga.'));
       }
     } finally {
-      setLoading(false);
+      setLoadingRecarga(false);
     }
   };
 
-  useEffect(() => {
-    consultarSaldo();
-    // (react-hooks plugin not configured)
-  }, []);
-
-  const saldoMostrado = saldo !== null ? saldo : 15500;
+  const ocupado = loadingSaldo || loadingRecarga;
+  const tarjetaEnmascarada = tarjetaId.trim()
+    ? `**** **** **** ${tarjetaId.trim().slice(-4)}`
+    : '**** **** **** ----';
+  const saldoTexto = loadingSaldo
+    ? 'Consultando...'
+    : saldo !== null
+      ? `$ ${saldo.toLocaleString('es-CO', { minimumFractionDigits: 2 })}`
+      : '—';
 
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-64px)] bg-gray-100 px-4">
@@ -80,62 +119,86 @@ export default function Civica() {
           <div className="mt-6">
             <div className="bg-yellow-400 rounded-md w-10 h-8 shadow-inner" />
           </div>
-          <p className="mt-6 text-3xl font-bold">
-            $ {saldoMostrado.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+          <p className="mt-6 text-3xl font-bold" aria-live="polite">
+            {saldoTexto}
           </p>
           <p className="mt-4 text-lg font-mono tracking-widest opacity-90">
-            **** **** **** 4321
-          </p>
-          <p className="mt-2 text-sm font-semibold tracking-wide opacity-80">
-            JUAN ESTEVAN SANCHEZ
+            {tarjetaEnmascarada}
           </p>
         </div>
 
         {/* Panel de acciones */}
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
           <div>
-            <label htmlFor="numero-tarjeta" className="block text-sm font-medium text-gray-700 mb-1">Número de tarjeta</label>
+            <label
+              htmlFor="numero-tarjeta"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Número de tarjeta
+            </label>
             <input
               id="numero-tarjeta"
               name="numero-tarjeta"
               type="text"
               value={tarjetaId}
-              onChange={(e) => setTarjetaId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setTarjetaId(e.target.value);
+                setSaldo(null);
+                setMensaje('');
+                setError('');
+              }}
+              disabled={ocupado}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              placeholder="Ej. 123456"
             />
           </div>
 
           <button
             onClick={consultarSaldo}
-            disabled={loading}
+            disabled={ocupado}
             className="w-full bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition font-medium"
           >
-            {loading ? 'Consultando...' : 'Consultar Saldo'}
+            {loadingSaldo ? 'Consultando...' : 'Consultar Saldo'}
           </button>
 
           <div>
-            <label htmlFor="monto-recarga" className="block text-sm font-medium text-gray-700 mb-1">Monto a recargar</label>
+            <label
+              htmlFor="monto-recarga"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Monto a recargar
+            </label>
             <input
               id="monto-recarga"
               name="monto-recarga"
               type="number"
+              min="1"
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={ocupado}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               placeholder="Ej. 20000"
             />
           </div>
 
           <button
             onClick={recargar}
-            disabled={loading}
+            disabled={ocupado}
             className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium"
           >
-            Recargar Tarjeta
+            {loadingRecarga ? 'Recargando...' : 'Recargar Tarjeta'}
           </button>
 
-          {error && <p className="text-center text-sm text-red-600 font-medium">{error}</p>}
-          {mensaje && <p className="text-center text-sm text-blue-600 font-medium">{mensaje}</p>}
+          {error && (
+            <p role="alert" className="text-center text-sm text-red-600 font-medium">
+              {error}
+            </p>
+          )}
+          {mensaje && (
+            <p role="status" className="text-center text-sm text-blue-600 font-medium">
+              {mensaje}
+            </p>
+          )}
         </div>
       </div>
     </div>

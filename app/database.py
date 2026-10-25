@@ -17,9 +17,9 @@ try:
     engine = create_engine(MYSQL_URL)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
-    print("✅ Conexión preparada para MySQL local")
+    print("Conexión preparada para MySQL local")
 except Exception as e:  # noqa: BLE001
-    print(f"❌ Error al configurar MySQL: {e}")
+    print(f"ERROR: no se pudo configurar MySQL: {e}")
 
 
 def get_mysql_db():
@@ -53,11 +53,11 @@ try:
         mongo_client = MongoClient(MONGO_URI)
     mongo_db = mongo_client[MONGO_DB_NAME]
     mongo_client.admin.command("ping")
-    print(f"✅ Conexión exitosa a MongoDB (Base de datos: {MONGO_DB_NAME})")
+    print(f"Conexión exitosa a MongoDB (Base de datos: {MONGO_DB_NAME})")
 except Exception as e:  # noqa: BLE001
     mongo_client = None
     mongo_db = None
     print(
-        "❌ Error conectando a MongoDB: Verifica tu usuario/contraseña o tu "
+        "ERROR: no se pudo conectar a MongoDB. Verifica tu usuario/contraseña o tu "
         f"conexión a internet.\nDetalle: {e}"
     )
